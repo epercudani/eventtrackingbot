@@ -1,0 +1,5 @@
+{
+	"ImportPath": "github.com/kinslayere/eventtrackingbot",
+	"GoVersion": "go1.5",
+	"Deps": []
+}
