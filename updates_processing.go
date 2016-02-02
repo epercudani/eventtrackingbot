@@ -5,7 +5,7 @@ import "log"
 func processUpdate(update Update) {
 
 	switch update.Message.Text {
-	case "/start":
+	case "/start", "/help":
 		sendStartResponse(update)
 	default:
 		log.Printf("Other message received")
