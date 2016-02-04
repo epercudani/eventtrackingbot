@@ -1,14 +1,18 @@
-package main
+package types
+
+import (
+	"encoding/json"
+)
 
 type User struct {
-	Id						int    			`json:"id"`
+	Id						uint64			`json:"id"`
 	FirstName				string    		`json:"first_name"`
 	LastName				string    		`json:"last_name"`
 	UserName				string   		`json:"username"`
 }
 
 type Chat struct {
-	Id						int    			`json:"id"`
+	Id						uint64			`json:"id"`
 	ChatType				string 			`json:"type"`
 	Title					string    		`json:"title"`
 	UserName				string    		`json:"username"`
@@ -83,7 +87,7 @@ type UserProfilePhotos struct {
 }
 
 type MessageWithoutReply struct {
-	MessageId 				int 			`json:"message_id"`
+	MessageId 				uint64			`json:"message_id"`
 	From					User    		`json:"from"`
 	Date					int 			`json:"date"`
 	Chat					Chat    		`json:"chat"`
@@ -111,13 +115,14 @@ type MessageWithoutReply struct {
 	MigrateFromChatId		int    			`json:"migrate_from_chat_id"`
 }
 
-type MessageWithReply struct {
-	MessageId 				int 			`json:"message_id"`
+type Message struct {
+	MessageId 				uint64			`json:"message_id"`
 	From					User    		`json:"from"`
 	Date					int 			`json:"date"`
 	Chat					Chat    		`json:"chat"`
 	ForwardFrom				User    		`json:"forward_from"`
 	ForwardDate				int				`json:"forward_date"`
+	ReplyToMessage 			*Message		`json:"reply_to_message"`
 	Text					string			`json:"text"`
 	Audio					Audio    		`json:"audio"`
 	Document				Document    	`json:"document"`
@@ -138,8 +143,6 @@ type MessageWithReply struct {
 	ChannelChatCreated		bool    		`json:"channel_chat_created"`
 	MigrateToChatId			int    			`json:"migrate_to_chat_id"`
 	MigrateFromChatId		int    			`json:"migrate_from_chat_id"`
-
-	replyToMessage 			MessageWithoutReply    		`json:"reply_to_message"`
 }
 
 type InlineQuery struct  {
@@ -157,7 +160,26 @@ type ChosenInlineResult struct {
 
 type Update struct {
 	UpdateId				uint64				`json:"update_id"`
-	Message					MessageWithReply    `json:"message"`
+	Message					Message				`json:"message"`
 	InlineQuery				InlineQuery         `json:"inline_query"`
 	ChosenInlineResult		ChosenInlineResult	`json:"chosen_inline_result"`
+}
+
+type ForceReply struct {
+	ForceReply				bool                `json:"force_reply"`
+	Selective				bool                `json:"selective"`
+}
+
+func (fr *ForceReply) String() string {
+
+	result, err := json.Marshal(fr)
+	if err != nil {
+		return ""
+	}
+
+	return string(result)
+}
+
+type Stringer interface {
+	String() string
 }

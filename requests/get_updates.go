@@ -1,4 +1,4 @@
-package main
+package requests
 
 import (
 	"net/http"
@@ -6,6 +6,8 @@ import (
 	"log"
 	"encoding/json"
 	"fmt"
+	"github.com/kinslayere/eventtrackingbot/types"
+	"github.com/kinslayere/eventtrackingbot/global"
 )
 
 const (
@@ -14,13 +16,13 @@ const (
 )
 
 type GetUpdatesResponse struct {
-	Ok			bool		`json:"ok"`
-	Result		[]Update	`json:"result"`
+	Ok			bool			`json:"ok"`
+	Result		[]types.Update	`json:"result"`
 }
 
-func getUpdates(offset uint64, timeout, limit int) (getUpdatesResponse GetUpdatesResponse, err error) {
+func GetUpdates(offset uint64, timeout, limit int) (getUpdatesResponse GetUpdatesResponse, err error) {
 
-	url := fmt.Sprintf(BASE_URL + "getUpdates?offset=%d&timeout=%d&limit=%d", offset, timeout, limit)
+	url := fmt.Sprintf(global.BASE_URL + "getUpdates?offset=%d&timeout=%d&limit=%d", offset, timeout, limit)
 	log.Printf("url: %s", url)
 
 	resp, err := http.Get(url)

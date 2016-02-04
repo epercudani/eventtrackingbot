@@ -2,24 +2,24 @@ package main
 
 import (
 	"log"
+	"github.com/kinslayere/eventtrackingbot/requests"
+	"github.com/kinslayere/eventtrackingbot/global"
+	"github.com/mediocregopher/radix.v2/redis"
 )
 
-const (
-	TOKEN = "133198388:AAHHbnm7cNHMEF6hmdehKTCMRDrFMN46n-U"
-	BASE_URL = "https://api.telegram.org/bot" + TOKEN + "/"
-)
+func receiveAndProcessUpdates() {
 
-func receiveAndProcessUpdates(nextUpdateId uint64) {
+	var nextUpdateId uint64
 
 	for {
-		updateResponse, err := getUpdates(nextUpdateId, 60, GET_UPDATES_DEFAULT_LIMIT)
+		updateResponse, err := requests.GetUpdates(nextUpdateId, 60, requests.GET_UPDATES_DEFAULT_LIMIT)
 		if err != nil {
 			log.Fatal(err)
 		}
 
 		if updateResponse.Ok {
 			if len(updateResponse.Result) > 0 {
-				nextUpdateId = processUpdates(updateResponse.Result)
+				nextUpdateId = ProcessUpdates(updateResponse.Result)
 			}
 		} else {
 			log.Fatal("updateResponse.Ok => false")
@@ -29,7 +29,15 @@ func receiveAndProcessUpdates(nextUpdateId uint64) {
 
 func main() {
 
-	var nextUpdateId uint64
+	redisNetwork := "tcp"
+	redisHost := "192.168.99.100:32768"
+	var err error
 
-	receiveAndProcessUpdates(nextUpdateId)
+	global.RedisClient, err = redis.Dial(redisNetwork, redisHost)
+	if err != nil {
+		log.Fatalf("Error connecting to redis host %s by %s: %v", redisHost, redisNetwork, err)
+	}
+	defer global.RedisClient.Close()
+
+	receiveAndProcessUpdates()
 }

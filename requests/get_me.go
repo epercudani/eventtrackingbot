@@ -1,10 +1,11 @@
-package main
+package requests
 
 import (
 	"log"
 	"encoding/json"
 	"net/http"
 	"io/ioutil"
+	"github.com/kinslayere/eventtrackingbot/global"
 )
 
 type GetMeResult struct {
@@ -18,9 +19,9 @@ type GetMeResponse struct {
 	Result		GetMeResult		`json:"result"`
 }
 
-func getMe() (getMeResponse GetMeResponse) {
+func GetMe() (getMeResponse GetMeResponse) {
 
-	url := BASE_URL + "getMe"
+	url := global.BASE_URL + "getMe"
 	log.Printf("url: %s", url)
 
 	resp, err := http.Get(url)
