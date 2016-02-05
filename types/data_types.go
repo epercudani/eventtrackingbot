@@ -5,14 +5,14 @@ import (
 )
 
 type User struct {
-	Id						uint64			`json:"id"`
+	Id						int64			`json:"id"`
 	FirstName				string    		`json:"first_name"`
 	LastName				string    		`json:"last_name"`
 	UserName				string   		`json:"username"`
 }
 
 type Chat struct {
-	Id						uint64			`json:"id"`
+	Id						int64			`json:"id"`
 	ChatType				string 			`json:"type"`
 	Title					string    		`json:"title"`
 	UserName				string    		`json:"username"`
@@ -87,7 +87,7 @@ type UserProfilePhotos struct {
 }
 
 type MessageWithoutReply struct {
-	MessageId 				uint64			`json:"message_id"`
+	MessageId 				int64			`json:"message_id"`
 	From					User    		`json:"from"`
 	Date					int 			`json:"date"`
 	Chat					Chat    		`json:"chat"`
@@ -116,7 +116,7 @@ type MessageWithoutReply struct {
 }
 
 type Message struct {
-	MessageId 				uint64			`json:"message_id"`
+	MessageId 				int64			`json:"message_id"`
 	From					User    		`json:"from"`
 	Date					int 			`json:"date"`
 	Chat					Chat    		`json:"chat"`
@@ -159,7 +159,7 @@ type ChosenInlineResult struct {
 }
 
 type Update struct {
-	UpdateId				uint64				`json:"update_id"`
+	UpdateId				int64				`json:"update_id"`
 	Message					Message				`json:"message"`
 	InlineQuery				InlineQuery         `json:"inline_query"`
 	ChosenInlineResult		ChosenInlineResult	`json:"chosen_inline_result"`

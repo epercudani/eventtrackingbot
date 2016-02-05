@@ -20,7 +20,7 @@ type GetUpdatesResponse struct {
 	Result		[]types.Update	`json:"result"`
 }
 
-func GetUpdates(offset uint64, timeout, limit int) (getUpdatesResponse GetUpdatesResponse, err error) {
+func GetUpdates(offset int64, timeout, limit int) (getUpdatesResponse GetUpdatesResponse, err error) {
 
 	url := fmt.Sprintf(global.BASE_URL + "getUpdates?offset=%d&timeout=%d&limit=%d", offset, timeout, limit)
 	log.Printf("url: %s", url)

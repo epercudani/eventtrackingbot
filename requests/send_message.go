@@ -29,7 +29,7 @@ func NewSendMessageRequest() *SendMessageRequest {
 	return &smr
 }
 
-func (r *SendMessageRequest) AddChatIdInt(chatId uint64) {
+func (r *SendMessageRequest) AddChatIdInt(chatId int64) {
 	r.params["chat_id"] = chatId
 }
 
@@ -45,7 +45,7 @@ func (r *SendMessageRequest) AddDisableWebPagePreview(disableWebPagePreview bool
 	r.params["disable_web_page_preview"] = disableWebPagePreview
 }
 
-func (r *SendMessageRequest) AddReplyToMessageId(replyToMessageId uint64) {
+func (r *SendMessageRequest) AddReplyToMessageId(replyToMessageId int64) {
 	r.params["reply_to_message_id"] = replyToMessageId
 }
 
@@ -60,8 +60,8 @@ func (r *SendMessageRequest) GetParamsString() string {
 	for k, v := range r.params {
 		var value string
 		switch vtype := v.(type) {
-		case uint64:
-			value = strconv.FormatUint(v.(uint64), 10)
+		case int64:
+			value = strconv.FormatInt(v.(int64), 10)
 		case string:
 			value = url.QueryEscape(v.(string))
 		case types.Stringer:

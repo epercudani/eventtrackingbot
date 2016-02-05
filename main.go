@@ -4,12 +4,13 @@ import (
 	"log"
 	"github.com/kinslayere/eventtrackingbot/requests"
 	"github.com/kinslayere/eventtrackingbot/global"
+	"github.com/kinslayere/eventtrackingbot/processes"
 	"github.com/mediocregopher/radix.v2/redis"
 )
 
 func receiveAndProcessUpdates() {
 
-	var nextUpdateId uint64
+	var nextUpdateId int64
 
 	for {
 		updateResponse, err := requests.GetUpdates(nextUpdateId, 60, requests.GET_UPDATES_DEFAULT_LIMIT)
@@ -19,7 +20,7 @@ func receiveAndProcessUpdates() {
 
 		if updateResponse.Ok {
 			if len(updateResponse.Result) > 0 {
-				nextUpdateId = ProcessUpdates(updateResponse.Result)
+				nextUpdateId = processes.ProcessUpdates(updateResponse.Result)
 			}
 		} else {
 			log.Fatal("updateResponse.Ok => false")
