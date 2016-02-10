@@ -16,13 +16,14 @@ var (
 	REGEXP_CREATE_EVENT = regexp.MustCompile(fmt.Sprintf("^/create_event(@%s)?$", global.BOT_NAME))
 	REGEXP_DELETE_EVENT = regexp.MustCompile(fmt.Sprintf("^/delete_event(@%s)?$", global.BOT_NAME))
 	REGEXP_CURRENT_EVENT = regexp.MustCompile(fmt.Sprintf("^/current_event(@%s)?$", global.BOT_NAME))
+	REGEXP_SELECT_EVENT = regexp.MustCompile(fmt.Sprintf("^/select_event(@%s)?$", global.BOT_NAME))
 	REGEXP_ALL_EVENTS = regexp.MustCompile(fmt.Sprintf("^/all_events(@%s)?$", global.BOT_NAME))
 )
 
 func processUpdate(update types.Update) {
 
 	if update.Message.Chat.ChatType == "private" {
-		ProcessPrivateChat(update)
+		processPrivateChat(update)
 		return
 	}
 
@@ -34,13 +35,16 @@ func processUpdate(update types.Update) {
 		processStartOrHelp(update)
 
 	case REGEXP_CREATE_EVENT.MatchString(strings.TrimSpace(update.Message.Text)):
-		processStartEventCreation(update)
+		processCreateEventWithoutName(update)
 
 	case REGEXP_DELETE_EVENT.MatchString(strings.TrimSpace(update.Message.Text)):
-		processStartEventDeletion(update)
+		processDeleteEventWithoutName(update)
 
 	case REGEXP_CURRENT_EVENT.MatchString(strings.TrimSpace(update.Message.Text)):
 		processCurrentEvent(update)
+
+	case REGEXP_SELECT_EVENT.MatchString(strings.TrimSpace(update.Message.Text)):
+		processSelectEvent(update)
 
 	case REGEXP_ALL_EVENTS.MatchString(strings.TrimSpace(update.Message.Text)):
 		processAllEvents(update)
@@ -67,9 +71,11 @@ func processUpdate(update types.Update) {
 
 				switch messageType {
 				case global.MESSAGE_TYPE_CREATE_EVENT_PROVIDE_NAME:
-					processEventName(update)
+					processSetEventName(update)
 				case global.MESSAGE_TYPE_DELETE_EVENT_PROVIDE_INDEX:
-					processDeleteIndex(update)
+					processIndexToDeleteEvent(update)
+				case global.MESSAGE_TYPE_SELECT_CURRENT_EVENT:
+					processIndexToSelectCurrentEvent(update)
 				}
 
 				_, err = persistence.Delete(isResponseKey)
@@ -92,6 +98,7 @@ func processUpdate(update types.Update) {
 }
 
 func ProcessUpdates(updateList []types.Update) (nextUpdateId int64) {
+
 	updatesCount := len(updateList)
 
 	for i, update := range updateList {

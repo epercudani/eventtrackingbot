@@ -37,13 +37,13 @@ func GetCurrentEventName(groupId int64) string {
 	eventKey, err := persistence.GetString(fmt.Sprintf(persistence.KEY_CURRENT_EVENT, groupId))
 	if err != nil {
 		log.Printf("Error getting current event key: %v", err)
-		return
+		return ""
 	}
 
 	eventName, err := persistence.GetStringFieldFromHash(eventKey, persistence.KEY_EVENT_NAME)
 	if err != nil {
 		log.Printf("Error getting current event name: %v", err)
-		return
+		return ""
 	}
 
 	return eventName

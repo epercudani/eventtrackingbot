@@ -54,6 +54,7 @@ func (r *SendMessageRequest) AddForceReply(forceReply types.ForceReply) {
 }
 
 func (r *SendMessageRequest) GetParamsString() string {
+
 	var paramsString bytes.Buffer
 	first := true
 

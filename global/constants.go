@@ -7,4 +7,5 @@ const (
 
 	MESSAGE_TYPE_CREATE_EVENT_PROVIDE_NAME = "create_event_provide_name"
 	MESSAGE_TYPE_DELETE_EVENT_PROVIDE_INDEX = "delete_event_provide_index"
+	MESSAGE_TYPE_SELECT_CURRENT_EVENT = "select_current_event"
 )
