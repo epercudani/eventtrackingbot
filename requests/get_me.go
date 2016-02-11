@@ -1,11 +1,9 @@
 package requests
 
 import (
-	"log"
-	"encoding/json"
-	"net/http"
-	"io/ioutil"
 	"github.com/kinslayere/eventtrackingbot/global"
+	"errors"
+	"fmt"
 )
 
 type GetMeResult struct {
@@ -19,30 +17,28 @@ type GetMeResponse struct {
 	Result		GetMeResult		`json:"result"`
 }
 
-func GetMe() (getMeResponse GetMeResponse) {
+type GetMeRequest struct {
+	getRequest *GetRequest
+}
 
-	url := global.BASE_URL + "getMe"
-	log.Printf("url: %s", url)
+func NewGetMeRequest() *GetMeRequest {
+	getRequest := NewGetRequest()
+	getRequest.baseUrl = global.BASE_URL + "getMe"
 
-	resp, err := http.Get(url)
+	return &GetMeRequest{getRequest}
+}
+
+func (r *GetMeRequest) Execute() (*GetMeResponse, error) {
+
+	var response GetMeResponse
+	err := r.getRequest.Execute(&response)
 	if err != nil {
-		log.Fatal(err)
-		return
-	}
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
-
-	log.Printf("%s", body)
-
-	err = json.Unmarshal(body, &getMeResponse)
-	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
-	return
+	if !response.Ok {
+		return nil, errors.New(fmt.Sprintf("Error executing request '%v'", r.getRequest.baseUrl))
+	}
+
+	return &response, nil
 }

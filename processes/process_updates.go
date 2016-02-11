@@ -27,6 +27,8 @@ func processUpdate(update types.Update) {
 		return
 	}
 
+	log.Printf("Update text: %s", update.Message.Text)
+
 	switch {
 	case REGEXP_START.MatchString(strings.TrimSpace(update.Message.Text)):
 		processStartOrHelp(update)

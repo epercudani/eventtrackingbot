@@ -4,9 +4,12 @@ import (
 	"fmt"
 	"github.com/kinslayere/eventtrackingbot/types"
 	"github.com/kinslayere/eventtrackingbot/requests"
+	"log"
 )
 
 func processStartOrHelp(update types.Update) {
+
+	log.Printf("Processing %s", update.Message.Text)
 
 	text := fmt.Sprintf("Hello %s!", update.Message.From.FirstName)
 	text += "\nThis is an event attendance tracking bot.\nAvailable commands are:"
@@ -19,9 +22,11 @@ func processStartOrHelp(update types.Update) {
 	text += "\n/all_events - Get all events created in this group"
 
 	smr := requests.NewSendMessageRequest()
-	smr.AddChatIdInt(update.Message.Chat.Id)
+	smr.AddChatId(update.Message.Chat.Id)
 	smr.AddText(text)
-	smr.DoRequest()
+	if _, err := smr.Execute(); err != nil {
+		log.Printf("Error sending response to %s: %v", update.Message.Text, err)
+	}
 }
 
 func processPrivateChat(update types.Update) {
@@ -30,7 +35,9 @@ func processPrivateChat(update types.Update) {
 	text += "Sorry, but this bot is intended for usage in group chats only."
 
 	smr := requests.NewSendMessageRequest()
-	smr.AddChatIdInt(update.Message.Chat.Id)
+	smr.AddChatId(update.Message.Chat.Id)
 	smr.AddText(text)
-	smr.DoRequest()
+	if _, err := smr.Execute(); err != nil {
+		log.Printf("Error sending response to %s: %v", update.Message.Text, err)
+	}
 }

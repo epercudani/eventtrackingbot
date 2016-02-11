@@ -1,17 +1,10 @@
 package requests
 
 import (
-	"log"
 	"errors"
-	"bytes"
-	"net/http"
-	"io/ioutil"
-	"encoding/json"
-	"fmt"
-	"strconv"
-	"net/url"
 	"github.com/kinslayere/eventtrackingbot/types"
 	"github.com/kinslayere/eventtrackingbot/global"
+	"fmt"
 )
 
 type SendMessageResponse struct {
@@ -20,102 +13,58 @@ type SendMessageResponse struct {
 }
 
 type SendMessageRequest struct {
-	params map[string]interface{}
+	getRequest *GetRequest
 }
 
 func NewSendMessageRequest() *SendMessageRequest {
-	var smr SendMessageRequest
-	smr.params = make(map[string]interface{})
-	return &smr
+	getRequest := NewGetRequest()
+	getRequest.baseUrl = global.BASE_URL + "sendMessage"
+	return &SendMessageRequest{getRequest}
 }
 
-func (r *SendMessageRequest) AddChatIdInt(chatId int64) {
-	r.params["chat_id"] = chatId
+func (r *SendMessageRequest) AddChatId(chatId int64) {
+	r.getRequest.SetParamInt64("chat_id", chatId)
 }
 
 func (r *SendMessageRequest) AddText(text string) {
-	r.params["text"] = text
+	r.getRequest.SetParamString("text", text)
 }
 
 func (r *SendMessageRequest) AddParseMode(parseMode string) {
-	r.params["parse_mode"] = parseMode
+	r.getRequest.SetParamString("parse_mode", parseMode)
 }
 
 func (r *SendMessageRequest) AddDisableWebPagePreview(disableWebPagePreview bool) {
-	r.params["disable_web_page_preview"] = disableWebPagePreview
+	r.getRequest.SetParamBoolean("disable_web_page_preview", disableWebPagePreview)
 }
 
 func (r *SendMessageRequest) AddReplyToMessageId(replyToMessageId int64) {
-	r.params["reply_to_message_id"] = replyToMessageId
+	r.getRequest.SetParamInt64("reply_to_message_id", replyToMessageId)
 }
 
 func (r *SendMessageRequest) AddForceReply(forceReply types.ForceReply) {
-	r.params["reply_markup"] = forceReply.String()
+	r.getRequest.SetParamStringer("reply_markup", forceReply)
 }
 
-func (r *SendMessageRequest) GetParamsString() string {
+func (r *SendMessageRequest) Execute() (*SendMessageResponse, error) {
 
-	var paramsString bytes.Buffer
-	first := true
-
-	for k, v := range r.params {
-		var value string
-		switch vtype := v.(type) {
-		case int64:
-			value = strconv.FormatInt(v.(int64), 10)
-		case string:
-			value = url.QueryEscape(v.(string))
-		case types.Stringer:
-			value = url.QueryEscape(vtype.String())
-		default:
-			value = ""
-		}
-
-		if first {
-			paramsString.WriteString(fmt.Sprintf("%s=%v", k, value))
-			first = false
-		} else {
-			paramsString.WriteString(fmt.Sprintf("&%s=%v", k, value))
-		}
+	if !r.getRequest.HasParam("chat_id") {
+		return nil, errors.New("chat_id is required")
 	}
 
-	return paramsString.String()
-}
-
-func (r *SendMessageRequest) DoRequest() (messageSent types.Message, err error) {
-
-	if _, ok := r.params["chat_id"]; !ok {
-		return messageSent, errors.New("chat_id is required")
+	if !r.getRequest.HasParam("text") {
+		return nil, errors.New("text is required")
 	}
-
-	if _, ok := r.params["text"]; !ok {
-		return messageSent, errors.New("text is required")
-	}
-
-	paramsString := r.GetParamsString()
-	url := global.BASE_URL + "sendMessage?" + paramsString
-	log.Printf("sendMessage:url: %s", url)
-
-	resp, err := http.Get(url)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
-
-	log.Printf("Send Message response body: %s", body)
 
 	var response SendMessageResponse
-	err = json.Unmarshal(body, &response)
+	err := r.getRequest.Execute(&response)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
-	messageSent = response.Result
-	return
+	if !response.Ok {
+		return nil, errors.New(fmt.Sprintf("Error executing request '%v'", r.getRequest.baseUrl))
+	}
+
+	return &response, nil
 }

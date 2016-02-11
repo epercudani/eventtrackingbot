@@ -170,7 +170,7 @@ type ForceReply struct {
 	Selective				bool                `json:"selective"`
 }
 
-func (fr *ForceReply) String() string {
+func (fr ForceReply) String() string {
 
 	result, err := json.Marshal(fr)
 	if err != nil {

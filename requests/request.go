@@ -1,45 +1,40 @@
 package requests
 
 import (
-	"log"
-	"errors"
-	"bytes"
-	"net/http"
-	"io/ioutil"
-	"encoding/json"
-	"fmt"
 	"strconv"
 	"net/url"
+	"fmt"
+	"bytes"
 )
 
 type Request struct {
-	url string
-	params map[string]interface{}
+	baseUrl string
+	params  map[string]string
 }
 
 func NewRequest() *Request {
 	var r Request
-	r.params = make(map[string]interface{})
+	r.params = make(map[string]string)
 	return &r
 }
 
-func (r *Request) SetUrl(url string) {
-	r.url = url
+func (r *Request) SetParamInt(name string, param int) {
+	r.params[name] = strconv.Itoa(param)
 }
 
-func (r *Request) AddParamInt64(name string, param int64) {
+func (r *Request) SetParamInt64(name string, param int64) {
 	r.params[name] = strconv.FormatInt(param, 10)
 }
 
-func (r *Request) AddParamString(name, param string) {
+func (r *Request) SetParamString(name, param string) {
 	r.params[name] = url.QueryEscape(param)
 }
 
-func (r *Request) AddParamBoolean(name string, param bool) {
-	r.params[name] = string(param)
+func (r *Request) SetParamBoolean(name string, param bool) {
+	r.params[name] = strconv.FormatBool(param)
 }
 
-func (r *Request) AddParamStringer(name string, param fmt.Stringer) {
+func (r *Request) SetParamStringer(name string, param fmt.Stringer) {
 	r.params[name] = url.QueryEscape(param.String())
 }
 
@@ -60,37 +55,7 @@ func (r *Request) GetParamsString() string {
 	return paramsString.String()
 }
 
-func (r *Request) DoRequest(response *interface{}) (err error) {
-
-	if _, ok := r.params["chat_id"]; !ok {
-		return errors.New("chat_id is required")
-	}
-
-	if _, ok := r.params["text"]; !ok {
-		return errors.New("text is required")
-	}
-
-	paramsString := r.GetParamsString()
-	url := r.url + "?" + paramsString
-	log.Printf("Request:url: %s", url)
-
-	resp, err := http.Get(url)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	log.Printf("Request:response:body: %s", body)
-
-	err = json.Unmarshal(body, &response)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return
+func (r *Request) HasParam(name string) bool {
+	_, ok := r.params[name]
+	return ok
 }

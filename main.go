@@ -11,9 +11,13 @@ import (
 func receiveAndProcessUpdates() {
 
 	var nextUpdateId int64
+	getUpdatesRequest := requests.NewGetUpdatesRequest()
+	getUpdatesRequest.SetTimeout(60)
+	getUpdatesRequest.SetLimit(global.GET_UPDATES_DEFAULT_LIMIT)
 
 	for {
-		updateResponse, err := requests.GetUpdates(nextUpdateId, 60, requests.GET_UPDATES_DEFAULT_LIMIT)
+		getUpdatesRequest.SetOffset(nextUpdateId)
+		updateResponse, err := getUpdatesRequest.Execute()
 		if err != nil {
 			log.Fatal(err)
 		}
