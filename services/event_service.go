@@ -18,9 +18,8 @@ func CreateEvent(groupId int64, eventName string) {
 	AddEventToGroup(groupId, eventName)
 }
 
-func DeleteEvent(groupId int64, index int) {
+func DeleteEvent(groupId int64, eventName string) {
 
-	eventName := GetGroupEventNames(groupId)[index]
 	eventKey := fmt.Sprintf(persistence.KEY_EVENT, groupId, eventName)
 	_, err := persistence.Delete(eventKey)
 	if err != nil {

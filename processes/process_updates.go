@@ -27,8 +27,6 @@ func processUpdate(update types.Update) {
 		return
 	}
 
-	log.Printf("Update text: %s", update.Message.Text)
-
 	switch {
 	case REGEXP_START.MatchString(strings.TrimSpace(update.Message.Text)):
 		processStartOrHelp(update)
@@ -54,6 +52,7 @@ func processUpdate(update types.Update) {
 	default:
 
 		if update.Message.ReplyToMessage != nil {
+
 			isResponseKey := fmt.Sprintf(persistence.KEY_WAITIING_RESPONSE_TO, update.Message.From.Id, update.Message.ReplyToMessage.MessageId)
 			isResponse, err := persistence.Exists(isResponseKey)
 			if err != nil {

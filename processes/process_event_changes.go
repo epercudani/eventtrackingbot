@@ -14,45 +14,46 @@ import (
 	"strconv"
 )
 
-func processCreateEventWithoutName(update types.Update) {
+func processCreateEventWithoutName(update types.Update) (err error) {
 
 	fields := strings.Fields(strings.TrimSpace(update.Message.Text))
 	smr := requests.NewSendMessageRequest()
 
 	switch len(fields) {
 	case 1:
+
+		// Send acknowledge message and wait for event name
 		smr.AddChatId(update.Message.Chat.Id)
-		smr.AddText(fmt.Sprintf("Hi %s! I'll help to create your event. Please tell me the event's name.", update.Message.From.FirstName))
+		smr.AddText(fmt.Sprintf("Hi %s! I'll help you to create your event. Please tell me the event's name.", update.Message.From.FirstName))
 		smr.AddReplyToMessageId(update.Message.MessageId)
 		smr.AddForceReply( types.ForceReply { ForceReply: true, Selective: true } )
 		response, err := smr.Execute()
 		if err != nil {
 			log.Printf("Error sending message: %v", err)
-			return
+			return err
 		}
 
 		messageSent := response.Result
-
-		err = persistence.SaveIntWithTTL(fmt.Sprintf(persistence.KEY_WAITIING_RESPONSE_TO, update.Message.From.Id, messageSent.MessageId), 1, 10 * 60) // Ten minutes
-		if err != nil {
-			log.Printf("Error saving waiting response flag: %v", err)
-			return
-		}
-
-		err = persistence.SaveStringWithTTL(fmt.Sprintf(persistence.KEY_MESSAGE_TYPE, messageSent.MessageId), global.MESSAGE_TYPE_CREATE_EVENT_PROVIDE_NAME, 10 * 60) // Ten minutes
-		if err != nil {
-			log.Printf("Error saving message type: %v", err)
-			return
-		}
-
 		log.Printf("Message sent id: %d in response to: %s", messageSent.MessageId, messageSent.ReplyToMessage.Text)
+		err = services.SetPendingResponseToMessage(update.Message.From.Id, messageSent.MessageId, global.MESSAGE_TYPE_CREATE_EVENT_PROVIDE_NAME)
+		if err != nil {
+			return err
+		}
+
 	default:
 		smr.AddChatId(update.Message.Chat.Id)
 		smr.AddText(fmt.Sprintf("Too many parameters. Please use: /create_event"))
+		_, err = smr.Execute()
+		if err != nil {
+			log.Printf("Error sending message: %v", err)
+			return err
+		}
 	}
+
+	return nil
 }
 
-func processDeleteEventWithoutName(update types.Update)  {
+func processDeleteEventWithoutName(update types.Update) (err error) {
 
 	fields := strings.Fields(strings.TrimSpace(update.Message.Text))
 	smr := requests.NewSendMessageRequest()
@@ -69,7 +70,7 @@ func processDeleteEventWithoutName(update types.Update)  {
 				text.WriteString(fmt.Sprintf("\n/%d %s", i + 1, event))
 			}
 		} else {
-			text.WriteString(fmt.Sprintf("There are no events for this group."))
+			text.WriteString(fmt.Sprintf("There are no events in this group."))
 		}
 
 		smr.AddChatId(update.Message.Chat.Id)
@@ -79,30 +80,30 @@ func processDeleteEventWithoutName(update types.Update)  {
 		response, err := smr.Execute()
 		if err != nil {
 			log.Printf("Error sending message: %v", err)
-			return
+			return err
 		}
 
 		messageSent := response.Result
-		err = persistence.SaveIntWithTTL(fmt.Sprintf(persistence.KEY_WAITIING_RESPONSE_TO, update.Message.From.Id, messageSent.MessageId), 1, 10 * 60) // Ten minutes
-		if err != nil {
-			log.Printf("Error saving waiting response flag: %v", err)
-			return
-		}
-
-		err = persistence.SaveStringWithTTL(fmt.Sprintf(persistence.KEY_MESSAGE_TYPE, messageSent.MessageId), global.MESSAGE_TYPE_DELETE_EVENT_PROVIDE_INDEX, 10 * 60) // Ten minutes
-		if err != nil {
-			log.Printf("Error saving message type: %v", err)
-			return
-		}
-
 		log.Printf("Message sent id: %d in response to: %s", messageSent.MessageId, messageSent.ReplyToMessage.Text)
+		err = services.SetPendingResponseToMessage(update.Message.From.Id, messageSent.MessageId, global.MESSAGE_TYPE_DELETE_EVENT_PROVIDE_INDEX)
+		if err != nil {
+			return err
+		}
+
 	default:
 		smr.AddChatId(update.Message.Chat.Id)
 		smr.AddText(fmt.Sprintf("Too many parameters. Please use: /delete_event"))
+		_, err = smr.Execute()
+		if err != nil {
+			log.Printf("Error sending message: %v", err)
+			return err
+		}
 	}
+
+	return nil
 }
 
-func processSetEventName(update types.Update)  {
+func processSetEventName(update types.Update) (err error) {
 
 	log.Printf("Processing event name")
 
@@ -110,11 +111,23 @@ func processSetEventName(update types.Update)  {
 	if len(strings.TrimSpace(eventName)) > 0 {
 		services.CreateEvent(update.Message.Chat.Id, eventName)
 	}
+
+	smr := requests.NewSendMessageRequest()
+	smr.AddChatId(update.Message.Chat.Id)
+	smr.AddText(fmt.Sprintf("Congrats %s! Event \"%s\" was created and set as the current event in this group.", update.Message.From.FirstName, eventName))
+	_, err = smr.Execute()
+	if err != nil {
+		log.Printf("Error sending message: %v", err)
+	}
+
+	return
 }
 
-func processIndexToDeleteEvent(update types.Update) {
+func processIndexToDeleteEvent(update types.Update) (err error) {
 
 	log.Printf("Processing delete index")
+
+	var eventName string
 
 	regexpIndex := regexp.MustCompile("^/[0-9]+$")
 
@@ -133,65 +146,94 @@ func processIndexToDeleteEvent(update types.Update) {
 		}
 
 		if index >= 1 && index <= size {
-			services.DeleteEvent(update.Message.Chat.Id, index - 1)
+			eventName = services.GetGroupEventNames(update.Message.Chat.Id)[index - 1]
+			services.DeleteEvent(update.Message.Chat.Id, eventName)
 			deleted = true
 		}
 	}
 
-	if !deleted {
-		smr := requests.NewSendMessageRequest()
-		smr.AddChatId(update.Message.Chat.Id)
+	smr := requests.NewSendMessageRequest()
+	smr.AddChatId(update.Message.Chat.Id)
+
+	if deleted {
+		smr.AddText(fmt.Sprintf("%s, you have successfully deleted event \"%s\".", update.Message.From.FirstName, eventName))
+	} else {
 		smr.AddText(fmt.Sprintf("%s is not a valid option.", update.Message.Text))
-		smr.Execute()
 	}
+
+	_, err = smr.Execute()
+	if err != nil {
+		log.Printf("Error sending message: %v", err)
+	}
+
+	return
 }
 
-func processIndexToSelectCurrentEvent(update types.Update) {
+func processIndexToSelectCurrentEvent(update types.Update) (err error) {
 
 	log.Printf("Processing select index")
 
-	regexpIndex := regexp.MustCompile("^/[0-9]+$")
+	var eventName string
 
 	selected := false
+
+	regexpIndex := regexp.MustCompile("^/[0-9]+$")
 
 	if regexpIndex.MatchString(update.Message.Text) {
 
 		index, err := strconv.Atoi(update.Message.Text[1:])
 		if err != nil {
 			log.Fatalf("Error: %v", err)
+			return err
 		}
 
 		size, err := persistence.GetSortedSetSize(fmt.Sprintf(persistence.KEY_GROUP_EVENTS, update.Message.Chat.Id))
 		if err != nil {
 			log.Printf("Error getting group events count: %v", err)
+			return err
 		}
 
 		if index >= 1 && index <= size {
-
 			groupId := update.Message.Chat.Id
-			eventName := services.GetGroupEventNames(groupId)[index - 1]
+			eventName = services.GetGroupEventNames(groupId)[index - 1]
 			services.SetCurrentEvent(update.Message.Chat.Id, fmt.Sprintf(persistence.KEY_EVENT, groupId, eventName))
 			selected = true
 		}
 	}
 
-	if !selected {
-		smr := requests.NewSendMessageRequest()
-		smr.AddChatId(update.Message.Chat.Id)
+	smr := requests.NewSendMessageRequest()
+	smr.AddChatId(update.Message.Chat.Id)
+
+	if selected {
+		smr.AddText(fmt.Sprintf("%s is now set as the current event in this group.", eventName))
+	} else {
 		smr.AddText(fmt.Sprintf("%s is not a valid option.", update.Message.Text))
-		smr.Execute()
 	}
+
+	_, err = smr.Execute()
+	if err != nil {
+		log.Printf("Error sending message: %v", err)
+		return err
+	}
+
+	return nil
 }
 
-func processAllEvents(update types.Update)  {
+func processAllEvents(update types.Update) (err error) {
 
 	events := services.GetGroupEventNames(update.Message.Chat.Id)
 
 	var text bytes.Buffer
 	if len(events) > 0 {
-		text.WriteString(fmt.Sprintf("Current events in this group are:"))
+		currentEvent := services.GetCurrentEventName(update.Message.Chat.Id)
+
+		text.WriteString(fmt.Sprintf("Events available this group are:"))
 		for _, event := range events {
-			text.WriteString(fmt.Sprintf("\n%s", event))
+			if (currentEvent == event) {
+				text.WriteString(fmt.Sprintf("\n%s [CURRENT]", event))
+			} else {
+				text.WriteString(fmt.Sprintf("\n%s", event))
+			}
 		}
 	} else {
 		text.WriteString(fmt.Sprintf("There are no events in this group."))
@@ -200,10 +242,16 @@ func processAllEvents(update types.Update)  {
 	smr := requests.NewSendMessageRequest()
 	smr.AddChatId(update.Message.Chat.Id)
 	smr.AddText(text.String())
-	smr.Execute()
+	_, err = smr.Execute()
+	if err != nil {
+		log.Printf("Error sending message: %v", err)
+		return err
+	}
+
+	return nil
 }
 
-func processCurrentEvent(update types.Update) {
+func processCurrentEvent(update types.Update) (err error) {
 
 	var text bytes.Buffer
 	selectPending := false
@@ -212,10 +260,10 @@ func processCurrentEvent(update types.Update) {
 	if len(eventName) > 0 {
 		text.WriteString(fmt.Sprintf("Your current event is \"%s\".", eventName))
 	} else {
-		events := services.GetGroupEventNames(update.Message.Chat.Id)
-		if len(events) > 0 {
+		eventNames := services.GetGroupEventNames(update.Message.Chat.Id)
+		if len(eventNames) > 0 {
 			text.WriteString(fmt.Sprintf("There is no event currently selected. Please chose one of the following:"))
-			for i, event := range events {
+			for i, event := range eventNames {
 				text.WriteString(fmt.Sprintf("\n/%d %s", i + 1, event))
 			}
 
@@ -234,29 +282,27 @@ func processCurrentEvent(update types.Update) {
 		response, err := smr.Execute()
 		if err != nil {
 			log.Printf("Error sending message: %v", err)
-			return
+			return err
 		}
 
 		messageSent := response.Result
-		err = persistence.SaveIntWithTTL(fmt.Sprintf(persistence.KEY_WAITIING_RESPONSE_TO, update.Message.From.Id, messageSent.MessageId), 1, 10 * 60) // Ten minutes
-		if err != nil {
-			log.Printf("Error saving waiting response flag: %v", err)
-			return
-		}
-
-		err = persistence.SaveStringWithTTL(fmt.Sprintf(persistence.KEY_MESSAGE_TYPE, messageSent.MessageId), global.MESSAGE_TYPE_SELECT_CURRENT_EVENT, 10 * 60) // Ten minutes
-		if err != nil {
-			log.Printf("Error saving message type: %v", err)
-			return
-		}
-
 		log.Printf("Message sent id: %d in response to: %s", messageSent.MessageId, messageSent.ReplyToMessage.Text)
+		err = services.SetPendingResponseToMessage(update.Message.From.Id, messageSent.MessageId, global.MESSAGE_TYPE_SELECT_CURRENT_EVENT)
+		if err != nil {
+			return err
+		}
 	} else {
-		smr.Execute()
+		_, err = smr.Execute()
+		if err != nil {
+			log.Printf("Error sending message: %v", err)
+			return err
+		}
 	}
+
+	return nil
 }
 
-func processSelectEvent(update types.Update) {
+func processSelectEvent(update types.Update) (err error) {
 
 	var text bytes.Buffer
 
@@ -278,21 +324,12 @@ func processSelectEvent(update types.Update) {
 	response, err := smr.Execute()
 	if err != nil {
 		log.Printf("Error sending message: %v", err)
-		return
+		return err
 	}
 
 	messageSent := response.Result
-	err = persistence.SaveIntWithTTL(fmt.Sprintf(persistence.KEY_WAITIING_RESPONSE_TO, update.Message.From.Id, messageSent.MessageId), 1, 10 * 60) // Ten minutes
-	if err != nil {
-		log.Printf("Error saving waiting response flag: %v", err)
-		return
-	}
-
-	err = persistence.SaveStringWithTTL(fmt.Sprintf(persistence.KEY_MESSAGE_TYPE, messageSent.MessageId), global.MESSAGE_TYPE_SELECT_CURRENT_EVENT, 10 * 60) // Ten minutes
-	if err != nil {
-		log.Printf("Error saving message type: %v", err)
-		return
-	}
-
 	log.Printf("Message sent id: %d in response to: %s", messageSent.MessageId, messageSent.ReplyToMessage.Text)
+	err = services.SetPendingResponseToMessage(update.Message.From.Id, messageSent.MessageId, global.MESSAGE_TYPE_SELECT_CURRENT_EVENT)
+
+	return nil
 }
