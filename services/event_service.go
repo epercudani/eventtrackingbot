@@ -2,54 +2,112 @@ package services
 import (
 	"fmt"
 	"log"
+	"bytes"
+	"encoding/json"
 	"github.com/kinslayere/eventtrackingbot/persistence"
+	"github.com/kinslayere/eventtrackingbot/types"
 )
 
-func CreateEvent(groupId int64, eventName string) {
+func GetEventKeyFromGroupAndName(groupId int64, eventName string) (eventKey string) {
+	return fmt.Sprintf(persistence.KEY_EVENT, groupId, eventName)
+}
 
-	eventKey := fmt.Sprintf(persistence.KEY_EVENT, groupId, eventName)
-	err := persistence.AddStringFieldToHash(eventKey, persistence.KEY_EVENT_NAME, eventName)
+func GetEvent(eventKey string) (event types.Event) {
+
+	eventJson, err := persistence.GetString(eventKey)
 	if err != nil {
-		log.Printf("Error creating event: %v", err)
+		log.Printf("Error getting current event: %v", err)
+	}
+
+	if eventJson == "" {
 		return
 	}
 
-	SetCurrentEvent(groupId, eventKey)
+	err = json.Unmarshal([]byte(eventJson), &event)
+	if err != nil {
+		log.Printf("Error unmarshalling current event: %v", err)
+	}
+
+	return
+}
+
+func CreateEvent(groupId int64, eventName string) {
+
+	event := types.Event{ Name: eventName }
+
+	SaveEvent(groupId, event)
+	SetCurrentEvent(groupId, eventName)
 	AddEventToGroup(groupId, eventName)
+}
+
+func SaveEvent(groupId int64, event types.Event) error {
+
+	eventJson, err := json.Marshal(event)
+	if err != nil {
+		log.Printf("Error marshaling event: %v", err)
+		return err
+	}
+
+	eventKey := GetEventKeyFromGroupAndName(groupId, event.Name)
+	err = persistence.SaveString(eventKey, string(eventJson))
+	if err != nil {
+		log.Printf("Error saving event: %v", err)
+		return err
+	}
+
+	return nil
 }
 
 func DeleteEvent(groupId int64, eventName string) {
 
-	eventKey := fmt.Sprintf(persistence.KEY_EVENT, groupId, eventName)
+	eventKey := GetEventKeyFromGroupAndName(groupId, eventName)
 	_, err := persistence.Delete(eventKey)
 	if err != nil {
 		log.Printf("Error deleting event: %v", err)
 		return
 	}
 
-	UnsetCurrentEvent(groupId, eventKey)
+	UnsetCurrentEvent(groupId)
 	RemoveEventFromGroup(groupId, eventName)
 }
 
-func GetCurrentEventName(groupId int64) string {
+func GetCurrentEvent(groupId int64) (event types.Event) {
 
 	eventKey, err := persistence.GetString(fmt.Sprintf(persistence.KEY_CURRENT_EVENT, groupId))
 	if err != nil {
 		log.Printf("Error getting current event key: %v", err)
-		return ""
 	}
 
-	eventName, err := persistence.GetStringFieldFromHash(eventKey, persistence.KEY_EVENT_NAME)
-	if err != nil {
-		log.Printf("Error getting current event name: %v", err)
-		return ""
-	}
-
-	return eventName
+	return GetEvent(eventKey)
 }
 
-func SetCurrentEvent(groupId int64, eventKey string) {
+func GetEventDescription(event types.Event) string {
 
+	var description bytes.Buffer
+
+	description.WriteString(event.Name)
+	if event.Date != "" {
+		description.WriteString(fmt.Sprintf(" on %s", event.Date))
+	}
+
+	return description.String()
+}
+
+func GetEventDetails(event types.Event) string {
+
+	var details bytes.Buffer
+
+	details.WriteString(GetEventDescription(event))
+	if event.Place != "" {
+		details.WriteString(fmt.Sprintf(" at %s", event.Place))
+	}
+
+	return details.String()
+}
+
+func SetCurrentEvent(groupId int64, eventName string) {
+
+	eventKey := fmt.Sprintf(persistence.KEY_EVENT, groupId, eventName)
 	err := persistence.SaveString(fmt.Sprintf(persistence.KEY_CURRENT_EVENT, groupId), eventKey)
 	if err != nil {
 		log.Printf("Error setting current event: %v", err)
@@ -57,7 +115,7 @@ func SetCurrentEvent(groupId int64, eventKey string) {
 	}
 }
 
-func UnsetCurrentEvent(groupId int64, eventKey string) {
+func UnsetCurrentEvent(groupId int64) {
 
 	_, err := persistence.Delete(fmt.Sprintf(persistence.KEY_CURRENT_EVENT, groupId))
 	if err != nil {
@@ -87,6 +145,21 @@ func RemoveEventFromGroup(groupId int64, eventName string) {
 		log.Printf("Error removing event from group: %v", err)
 		return
 	}
+}
+
+func GetGroupEvents(groupId int64) (events []types.Event) {
+
+	eventNames, err := persistence.GetStringsFromSortedSet(fmt.Sprintf(persistence.KEY_GROUP_EVENTS, groupId))
+	if err != nil {
+		log.Printf("Error getting event names for group %d: %v", groupId, err)
+	}
+
+	for _, eventName := range eventNames {
+		eventKey := GetEventKeyFromGroupAndName(groupId, eventName)
+		events = append(events, GetEvent(eventKey))
+	}
+
+	return
 }
 
 func GetGroupEventNames(groupId int64) (events []string) {

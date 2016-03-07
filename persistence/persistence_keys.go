@@ -6,6 +6,7 @@ const (
 
 	KEY_EVENT = "group:%d:event:%s"
 	KEY_EVENT_NAME = "eventName"
+	KEY_EVENT_DATE = "eventDate"
 
 	KEY_CURRENT_EVENT = "group:%d:current_event"
 

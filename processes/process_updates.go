@@ -14,6 +14,8 @@ var (
 	REGEXP_START = regexp.MustCompile(fmt.Sprintf("^/start(@%s)?$", global.BOT_NAME))
 	REGEXP_HELP = regexp.MustCompile(fmt.Sprintf("^/help(@%s)?$", global.BOT_NAME))
 	REGEXP_CREATE_EVENT = regexp.MustCompile(fmt.Sprintf("^/create_event(@%s)?$", global.BOT_NAME))
+	REGEXP_SET_WHEN = regexp.MustCompile(fmt.Sprintf("^/set_when(@%s)?$", global.BOT_NAME))
+	REGEXP_SET_WHERE = regexp.MustCompile(fmt.Sprintf("^/set_where(@%s)?$", global.BOT_NAME))
 	REGEXP_DELETE_EVENT = regexp.MustCompile(fmt.Sprintf("^/delete_event(@%s)?$", global.BOT_NAME))
 	REGEXP_CURRENT_EVENT = regexp.MustCompile(fmt.Sprintf("^/current_event(@%s)?$", global.BOT_NAME))
 	REGEXP_SELECT_EVENT = regexp.MustCompile(fmt.Sprintf("^/select_event(@%s)?$", global.BOT_NAME))
@@ -36,6 +38,12 @@ func processUpdate(update types.Update) {
 
 	case REGEXP_CREATE_EVENT.MatchString(strings.TrimSpace(update.Message.Text)):
 		processCreateEventWithoutName(update)
+
+	case REGEXP_SET_WHEN.MatchString(strings.TrimSpace(update.Message.Text)):
+		processSetWhen(update)
+
+	case REGEXP_SET_WHERE.MatchString(strings.TrimSpace(update.Message.Text)):
+		processSetWhere(update)
 
 	case REGEXP_DELETE_EVENT.MatchString(strings.TrimSpace(update.Message.Text)):
 		processDeleteEventWithoutName(update)
@@ -71,8 +79,12 @@ func processUpdate(update types.Update) {
 				}
 
 				switch messageType {
-				case global.MESSAGE_TYPE_CREATE_EVENT_PROVIDE_NAME:
+				case global.MESSAGE_TYPE_EVENT_PROVIDE_NAME:
 					processSetEventName(update)
+				case global.MESSAGE_TYPE_EVENT_PROVIDE_DATE:
+					processSetEventProperty(update, global.EVENT_PROPERTY_DATE)
+				case global.MESSAGE_TYPE_EVENT_PROVIDE_PLACE:
+					processSetEventProperty(update, global.EVENT_PROPERTY_PLACE)
 				case global.MESSAGE_TYPE_DELETE_EVENT_PROVIDE_INDEX:
 					processIndexToDeleteEvent(update)
 				case global.MESSAGE_TYPE_SELECT_CURRENT_EVENT:

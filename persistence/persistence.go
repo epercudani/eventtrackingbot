@@ -149,11 +149,22 @@ func RemoveFromSortedSetByScore(setKey string, scoreMin, scoreMax int) error {
 	return nil
 }
 
+func GetFullHash(hashKey string) ([]string, error) {
+
+	result, err := global.RedisClient.Cmd("HGETALL", hashKey).List()
+	if err != nil {
+		log.Printf("persistence.getFullHash. hash=\"%s\". Error %v", hashKey, err)
+		return nil, err
+	}
+
+	return result, nil
+}
+
 func GetStringFieldFromHash(hashKey, key string) (string, error) {
 
 	result, err := global.RedisClient.Cmd("HGET", hashKey, key).Str()
 	if err != nil {
-		log.Printf("persistence.GetStringFieldFromHash. hash=\"%s\" key=\"%s\". Error %v", key, err)
+		log.Printf("persistence.GetStringFieldFromHash. hash=\"%s\" key=\"%s\". Error %v", hashKey, key, err)
 		return "", err
 	}
 

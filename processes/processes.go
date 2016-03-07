@@ -16,6 +16,7 @@ func processStartOrHelp(update types.Update) {
 	text += "\n/start - Start this bot"
 	text += "\n/help - Info and commands"
 	text += "\n/create_event - Create a new event"
+	text += "\n/set_when - Set current event's date"
 	text += "\n/delete_event - Delete an existing event"
 	text += "\n/current_event - Get current event being tracked"
 	text += "\n/select_event - Change the current event"
