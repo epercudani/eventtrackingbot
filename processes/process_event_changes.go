@@ -336,6 +336,53 @@ func processAllEvents(update types.Update) (err error) {
 	return nil
 }
 
+func processParticipants(update types.Update) (err error) {
+
+	currentEvent := services.GetCurrentEvent(update.Message.Chat.Id)
+	if currentEvent.Name != "" {
+		participants := services.GetParticipantsToEvent(update.Message.Chat.Id, currentEvent.Name)
+		if len(participants) > 0 {
+			return services.SendAttendanceList(update.Message.Chat.Id, update.Message.MessageId, services.GetEventDescription(currentEvent), participants)
+		} else {
+			return services.SendNoParticipantsYetMessage(update.Message.Chat.Id, update.Message.MessageId, services.GetEventDescription(currentEvent))
+		}
+	} else {
+		return processCurrentEventNotSet(update)
+	}
+}
+
+func processWillGo(update types.Update) (err error) {
+
+	currentEvent := services.GetCurrentEvent(update.Message.Chat.Id)
+	if currentEvent.Name != "" {
+		err := services.AddParticipantToEvent(update.Message.Chat.Id, currentEvent.Name, update.Message.From)
+		if err != nil {
+			return err
+		}
+
+		return services.SendAttendanceConfirmationMessage(update.Message.Chat.Id, update.Message.MessageId,
+			update.Message.From.FirstName, services.GetEventDescription(currentEvent))
+	} else {
+		return processCurrentEventNotSet(update)
+	}
+}
+
+func processWontGo(update types.Update) (err error) {
+
+	currentEvent := services.GetCurrentEvent(update.Message.Chat.Id)
+	if currentEvent.Name != "" {
+		err := services.RemoveParticipantFromEvent(update.Message.Chat.Id, currentEvent.Name, update.Message.From)
+		if err != nil {
+			return err
+		}
+
+		return services.SendAttendanceRemovalConfirmationMessage(update.Message.Chat.Id, update.Message.MessageId,
+			update.Message.From.FirstName, services.GetEventDescription(currentEvent))
+	} else {
+		return processCurrentEventNotSet(update)
+	}
+}
+
 func processCurrentEvent(update types.Update) (err error) {
 
 	currentEvent := services.GetCurrentEvent(update.Message.Chat.Id)

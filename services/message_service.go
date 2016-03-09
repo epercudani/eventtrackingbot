@@ -77,6 +77,90 @@ func SendCurrentEventMessage(chatId int64, currentEvent types.Event) (err error)
 	return nil
 }
 
+func SendAttendanceList(chatId, replyToMessageId int64, eventDescription string, participants []types.User) (err error) {
+
+	var text bytes.Buffer
+	text.WriteString(fmt.Sprintf("Current participants for %s are:", eventDescription))
+	for _, participant := range participants {
+		text.WriteString(fmt.Sprintf("\n%s", participant.FirstName))
+	}
+
+	smr := requests.NewSendMessageRequest()
+	smr.AddChatId(chatId)
+	smr.AddText(text.String())
+	smr.AddReplyToMessageId(replyToMessageId)
+	response, err := smr.Execute()
+	if err != nil {
+		log.Printf("Error sending message: %v", err)
+		return err
+	}
+
+	messageSent := response.Result
+	log.Printf("Message sent id: %d in response to: %s", messageSent.MessageId, messageSent.ReplyToMessage.Text)
+
+	return nil
+}
+
+func SendNoParticipantsYetMessage(chatId, replyToMessageId int64, eventDescription string) (err error) {
+
+	text := fmt.Sprintf("There are no participants confirmed for %s yet.", eventDescription)
+
+	smr := requests.NewSendMessageRequest()
+	smr.AddChatId(chatId)
+	smr.AddText(text)
+	smr.AddReplyToMessageId(replyToMessageId)
+	response, err := smr.Execute()
+	if err != nil {
+		log.Printf("Error sending message: %v", err)
+		return err
+	}
+
+	messageSent := response.Result
+	log.Printf("Message sent id: %d in response to: %s", messageSent.MessageId, messageSent.ReplyToMessage.Text)
+
+	return nil
+}
+
+func SendAttendanceConfirmationMessage(chatId, replyToMessageId int64, userName, eventDescription string) (err error) {
+
+	text := fmt.Sprintf("Thanks %s! You have been confirmed to attend %s", userName, eventDescription)
+
+	smr := requests.NewSendMessageRequest()
+	smr.AddChatId(chatId)
+	smr.AddText(text)
+	smr.AddReplyToMessageId(replyToMessageId)
+	response, err := smr.Execute()
+	if err != nil {
+		log.Printf("Error sending message: %v", err)
+		return err
+	}
+
+	messageSent := response.Result
+	log.Printf("Message sent id: %d in response to: %s", messageSent.MessageId, messageSent.ReplyToMessage.Text)
+
+	return nil
+}
+
+func SendAttendanceRemovalConfirmationMessage(chatId, replyToMessageId int64, userName, eventDescription string) (err error) {
+
+	text := fmt.Sprintf("Thanks %s! You have been removed from %s participants", userName, eventDescription)
+
+	smr := requests.NewSendMessageRequest()
+	smr.AddChatId(chatId)
+	smr.AddText(text)
+	smr.AddReplyToMessageId(replyToMessageId)
+	response, err := smr.Execute()
+	if err != nil {
+		log.Printf("Error sending message: %v", err)
+		return err
+	}
+
+	messageSent := response.Result
+	log.Printf("Message sent id: %d in response to: %s", messageSent.MessageId, messageSent.ReplyToMessage.Text)
+
+	return nil
+}
+
 func SendCurrentEventNotSetMessage(chatId, replyToMessageId int64) (err error) {
 
 	text := "There is no current event in this group."

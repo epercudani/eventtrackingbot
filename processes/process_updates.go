@@ -20,6 +20,9 @@ var (
 	REGEXP_CURRENT_EVENT = regexp.MustCompile(fmt.Sprintf("^/current_event(@%s)?$", global.BOT_NAME))
 	REGEXP_SELECT_EVENT = regexp.MustCompile(fmt.Sprintf("^/select_event(@%s)?$", global.BOT_NAME))
 	REGEXP_ALL_EVENTS = regexp.MustCompile(fmt.Sprintf("^/all_events(@%s)?$", global.BOT_NAME))
+	REGEXP_PARTICIPANTS = regexp.MustCompile(fmt.Sprintf("^/participants(@%s)?$", global.BOT_NAME))
+	REGEXP_WILL_GO = regexp.MustCompile(fmt.Sprintf("^/will_go(@%s)?$", global.BOT_NAME))
+	REGEXP_WONT_GO = regexp.MustCompile(fmt.Sprintf("^/wont_go(@%s)?$", global.BOT_NAME))
 )
 
 func processUpdate(update types.Update) {
@@ -56,6 +59,15 @@ func processUpdate(update types.Update) {
 
 	case REGEXP_ALL_EVENTS.MatchString(strings.TrimSpace(update.Message.Text)):
 		processAllEvents(update)
+
+	case REGEXP_PARTICIPANTS.MatchString(strings.TrimSpace(update.Message.Text)):
+		processParticipants(update)
+
+	case REGEXP_WILL_GO.MatchString(strings.TrimSpace(update.Message.Text)):
+		processWillGo(update)
+
+	case REGEXP_WONT_GO.MatchString(strings.TrimSpace(update.Message.Text)):
+		processWontGo(update)
 
 	default:
 

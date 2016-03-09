@@ -171,3 +171,50 @@ func GetGroupEventNames(groupId int64) (events []string) {
 
 	return
 }
+
+func GetParticipantsToEvent(groupId int64, eventName string) (participants []types.User) {
+
+	key := fmt.Sprintf(persistence.KEY_EVENT_PARTICIPANTS, groupId, eventName)
+	participantsJson, err := persistence.GetStringsFromList(key)
+	if err != nil {
+		log.Printf("Error getting participants for group %d: %v", groupId, err)
+	}
+
+	var user types.User
+	for _, participantJson := range participantsJson {
+		err = json.Unmarshal([]byte(participantJson), &user)
+		if err != nil {
+			log.Printf("Error unmarshalling current event: %v", err)
+		}
+
+		participants = append(participants, user)
+	}
+
+	return
+}
+
+func AddParticipantToEvent(groupId int64, eventName string, participant types.User) (err error) {
+
+	key := fmt.Sprintf(persistence.KEY_EVENT_PARTICIPANTS, groupId, eventName)
+
+	participantJson, err := json.Marshal(participant)
+	if err != nil {
+		log.Printf("Error marshaling event: %v", err)
+		return err
+	}
+
+	return persistence.AddStringToList(key, string(participantJson))
+}
+
+func RemoveParticipantFromEvent(groupId int64, eventName string, participant types.User) (err error) {
+
+	key := fmt.Sprintf(persistence.KEY_EVENT_PARTICIPANTS, groupId, eventName)
+
+	participantJson, err := json.Marshal(participant)
+	if err != nil {
+		log.Printf("Error marshaling event: %v", err)
+		return err
+	}
+
+	return persistence.RemoveStringFromList(key, string(participantJson))
+}

@@ -123,6 +123,19 @@ func AddStringFieldToHash(hashKey, key, value string) error {
 	return nil
 }
 
+func RemoveStringFromList(key, value string) error {
+
+	err := global.RedisClient.Cmd("LREM", key, 0, value).Err
+	if err != nil {
+		log.Printf("persistence.RemoveStringFromList. list=\"%s\" value=\"%s\". Error %v", key, value, err)
+		return err
+	}
+
+	log.Printf("persistence.RemoveStringFromList. Removed list=\"%s\" value=\"%s\"", key, value)
+
+	return nil
+}
+
 func RemoveFromSortedSet(setKey, key string) error {
 
 	err := global.RedisClient.Cmd("ZREM", setKey, key).Err
