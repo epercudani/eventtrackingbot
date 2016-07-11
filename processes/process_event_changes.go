@@ -12,7 +12,6 @@ import (
 	"bytes"
 	"regexp"
 	"strconv"
-	"errors"
 )
 
 func processCreateEventWithoutName(update types.Update) (err error) {
@@ -179,7 +178,7 @@ func processSetEventProperty(update types.Update, property string) (err error) {
 
 	log.Printf(fmt.Sprintf("Processing event %s with value \"%s\"", property, update.Message.Text))
 	if len(strings.TrimSpace(update.Message.Text)) == 0 {
-		errors.New(fmt.Sprintf("Error setting property %s with empty value", property))
+		return fmt.Errorf("Error setting property %s with empty value", property)
 	}
 
 	currentEvent := services.GetCurrentEvent(update.Message.Chat.Id)
