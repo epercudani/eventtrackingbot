@@ -46,11 +46,13 @@ func main() {
 	}
 	var err error
 
+	log.Printf("Redis raw URL: %s\n", redisUrlRaw)
 	redisUrl, err := url.Parse(redisUrlRaw)
 	if err != nil {
 		log.Fatalf("Failed to parse redis URL: %s. Error is: %s", redisUrlRaw, err.Error())
 	}
 
+	log.Printf("Redis URL path: %s\n", redisUrl.Path)
 	global.RedisClient, err = redis.Dial(redisNetwork, redisUrl.Path)
 	if err != nil {
 		log.Fatalf("Error connecting to redis host %s by %s. Error is: %v", redisUrl, redisNetwork, err)
@@ -66,5 +68,5 @@ func main() {
 
 	receiveAndProcessUpdates()
 
-	log.Printf("Starting bot")
+	log.Printf("Finishing bot")
 }
