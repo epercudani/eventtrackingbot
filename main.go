@@ -39,9 +39,9 @@ func main() {
 	log.Printf("Starting bot")
 
 	redisNetwork := "tcp"
-	redisHost, ok := syscall.Getenv("REDIS_HOST")
+	redisHost, ok := syscall.Getenv("REDIS_URL")
 	if !ok {
-		log.Fatalf("Failed to obtain redis host address from env variable %s", "REDIS_HOST")
+		log.Fatalf("Failed to obtain redis host address from env variable %s", "REDIS_URL")
 	}
 	var err error
 
