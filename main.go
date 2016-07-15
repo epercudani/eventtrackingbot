@@ -52,10 +52,10 @@ func main() {
 		log.Fatalf("Failed to parse redis URL: %s. Error is: %s", redisUrlRaw, err.Error())
 	}
 
-	log.Printf("Redis URL path: %s\n", redisUrl.Path)
-	global.RedisClient, err = redis.Dial(redisNetwork, redisUrl.Path)
+	log.Printf("Redis URL host: %s\n", redisUrl.Host)
+	global.RedisClient, err = redis.Dial(redisNetwork, redisUrl.Host)
 	if err != nil {
-		log.Fatalf("Error connecting to redis host %s by %s. Error is: %v", redisUrl, redisNetwork, err)
+		log.Fatalf("Error connecting to redis host %s by %s. Error is: %v", redisUrl.Host, redisNetwork, err)
 	}
 	defer global.RedisClient.Close()
 
