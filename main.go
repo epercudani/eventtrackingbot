@@ -51,15 +51,17 @@ func main() {
 		log.Fatalf("Failed to parse redis URL: %s. Error is: %s", redisUrlRaw, err.Error())
 	}
 
-	global.RedisClient, err = redis.Dial(redisNetwork, redisUrl.Host)
+	global.RedisClient, err = redis.Dial(redisNetwork, redisUrl.Path)
 	if err != nil {
-		log.Fatalf("Error connecting to redis host %s by %s: %v", redisUrl, redisNetwork, err)
+		log.Fatalf("Error connecting to redis host %s by %s. Error is: %v", redisUrl, redisNetwork, err)
 	}
 	defer global.RedisClient.Close()
 
-	redisPass, ok := redisUrl.User.Password()
-	if ok {
-		global.RedisClient.Cmd("AUTH", redisPass)
+	if redisUrl.User != nil {
+		redisPass, ok := redisUrl.User.Password()
+		if ok {
+			global.RedisClient.Cmd("AUTH", redisPass)
+		}
 	}
 
 	receiveAndProcessUpdates()
