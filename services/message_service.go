@@ -80,7 +80,12 @@ func SendCurrentEventMessage(chatId int64, currentEvent types.Event) (err error)
 func SendAttendanceList(chatId, replyToMessageId int64, eventDescription string, participants []types.User) (err error) {
 
 	var text bytes.Buffer
-	text.WriteString(fmt.Sprintf("Current participants for %s are:", eventDescription))
+	participantWord := "participants"
+	if len(participants) == 1 {
+		participantWord = "participant"
+	}
+
+	text.WriteString(fmt.Sprintf("%d %s for %s:", len(participants), participantWord, eventDescription))
 	for _, participant := range participants {
 		text.WriteString(fmt.Sprintf("\n%s", participant.FirstName))
 	}

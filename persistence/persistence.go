@@ -49,11 +49,11 @@ func SaveString(key string, value string) error {
 
 	err := global.RedisClient.Cmd("SET", key, value).Err
 	if err != nil {
-		log.Printf("persistence.SaveString. key=\"%s\" value=\"%d\". Error %v", key, value, err)
+		log.Printf("persistence.SaveString. key=\"%s\" value=\"%s\". Error %v", key, value, err)
 		return err
 	}
 
-	log.Printf("persistence.SaveString. Saved key=\"%s\" value=\"%d\"", key, value)
+	log.Printf("persistence.SaveString. Saved key=\"%s\" value=\"%s\"", key, value)
 
 	return nil
 }
@@ -66,7 +66,7 @@ func SaveStringWithTTL(key, value string, ttl int) error {
 		return err
 	}
 
-	log.Printf("persistence.SaveString. Saved key=\"%s\" value=\"%d\"", key, value)
+	log.Printf("persistence.SaveString. Saved key=\"%s\" value=\"%s\"", key, value)
 
 	return nil
 }

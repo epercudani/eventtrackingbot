@@ -6,11 +6,13 @@ import (
 	"github.com/kinslayere/eventtrackingbot/global"
 	"github.com/kinslayere/eventtrackingbot/processes"
 	"github.com/mediocregopher/radix.v2/redis"
+	"syscall"
 )
 
 func receiveAndProcessUpdates() {
 
 	var nextUpdateId int64
+	log.Printf("Starting to listen updates")
 	getUpdatesRequest := requests.NewGetUpdatesRequest()
 	getUpdatesRequest.SetTimeout(60)
 	getUpdatesRequest.SetLimit(global.GET_UPDATES_DEFAULT_LIMIT)
@@ -34,8 +36,13 @@ func receiveAndProcessUpdates() {
 
 func main() {
 
+	log.Printf("Starting bot")
+
 	redisNetwork := "tcp"
-	redisHost := "192.168.99.100:32768"
+	redisHost, ok := syscall.Getenv("REDIS_HOST")
+	if !ok {
+		log.Fatalf("Failed to obtain redis host address from env variable %s", "REDIS_HOST")
+	}
 	var err error
 
 	global.RedisClient, err = redis.Dial(redisNetwork, redisHost)
@@ -45,4 +52,6 @@ func main() {
 	defer global.RedisClient.Close()
 
 	receiveAndProcessUpdates()
+
+	log.Printf("Starting bot")
 }

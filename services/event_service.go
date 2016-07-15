@@ -90,6 +90,10 @@ func GetEventDescription(event types.Event) string {
 		description.WriteString(fmt.Sprintf(" on %s", event.Date))
 	}
 
+	if event.Place != "" {
+		description.WriteString(fmt.Sprintf(" at %s", event.Place))
+	}
+
 	return description.String()
 }
 

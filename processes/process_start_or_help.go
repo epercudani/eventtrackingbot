@@ -2,8 +2,8 @@ package processes
 
 import (
 	"log"
-	"fmt"
 	"github.com/kinslayere/eventtrackingbot/requests"
+	"fmt"
 	"github.com/kinslayere/eventtrackingbot/types"
 )
 

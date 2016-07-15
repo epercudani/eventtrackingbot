@@ -198,7 +198,7 @@ func processSetEventProperty(update types.Update, property string) (err error) {
 
 	smr := requests.NewSendMessageRequest()
 	smr.AddChatId(update.Message.Chat.Id)
-	smr.AddText(fmt.Sprintf("Ok! Event \"%s\" %s was set to \"%s\".", currentEvent.Name, property, currentEvent.Date))
+	smr.AddText(fmt.Sprintf("Ok! Event \"%s\" %s was set to \"%s\".", currentEvent.Name, property, update.Message.Text))
 	_, err = smr.Execute()
 	if err != nil {
 		log.Printf("Error sending message: %v", err)
