@@ -18,6 +18,8 @@ func doWithRetry(cmd string, args ...interface{}) *redis.Resp {
 			log.Printf("persistence.doWithRetry. cmd=\"%s\" args=\"%v\". Attempt %d Error %v", cmd, args, i+1, resp.Err)
 			continue
 		}
+
+		break
 	}
 
 	return resp
