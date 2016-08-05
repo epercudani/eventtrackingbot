@@ -5,9 +5,10 @@ import (
 	"github.com/kinslayere/eventtrackingbot/requests"
 	"github.com/kinslayere/eventtrackingbot/global"
 	"github.com/kinslayere/eventtrackingbot/processes"
-	"github.com/mediocregopher/radix.v2/redis"
 	"syscall"
 	"net/url"
+	"github.com/mediocregopher/radix.v2/pool"
+	"github.com/mediocregopher/radix.v2/redis"
 )
 
 func receiveAndProcessUpdates() {
@@ -53,17 +54,34 @@ func main() {
 	}
 
 	log.Printf("Redis URL host: %s\n", redisUrl.Host)
-	global.RedisClient, err = redis.Dial(redisNetwork, redisUrl.Host)
+
+	var redisPass string
+	var passSet bool
+	if redisUrl.User != nil {
+		redisPass, passSet = redisUrl.User.Password()
+	}
+
+	connectFunc := pool.DialFunc(func(network, addr string) (*redis.Client, error) {
+
+		client, err := redis.Dial(network, addr)
+		if err != nil {
+			return nil, err
+
+		}
+
+		if passSet {
+			if err = client.Cmd("AUTH", redisPass).Err; err != nil {
+				client.Close()
+				return nil, err
+			}
+		}
+
+		return client, nil
+	})
+
+	global.RedisPool, err = pool.NewCustom(redisNetwork, redisUrl.Host, 1, connectFunc)
 	if err != nil {
 		log.Fatalf("Error connecting to redis host %s by %s. Error is: %v", redisUrl.Host, redisNetwork, err)
-	}
-	defer global.RedisClient.Close()
-
-	if redisUrl.User != nil {
-		redisPass, ok := redisUrl.User.Password()
-		if ok {
-			global.RedisClient.Cmd("AUTH", redisPass)
-		}
 	}
 
 	receiveAndProcessUpdates()

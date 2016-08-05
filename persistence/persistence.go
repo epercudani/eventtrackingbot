@@ -1,14 +1,31 @@
 package persistence
 
 import (
-	"github.com/kinslayere/eventtrackingbot/global"
 	"strconv"
 	"log"
+	"github.com/kinslayere/eventtrackingbot/global"
+	"github.com/mediocregopher/radix.v2/redis"
 )
+
+func doWithRetry(cmd string, args ...interface{}) *redis.Resp {
+
+	var resp *redis.Resp
+	for i := 0; i < global.PERSISTENCE_RETRIES; i++ {
+
+		resp = global.RedisPool.Cmd(cmd, args)
+
+		if resp.Err != nil {
+			log.Printf("persistence.doWithRetry. cmd=\"%s\" args=\"%v\". Attempt %d Error %v", cmd, args, i+1, resp.Err)
+			continue
+		}
+	}
+
+	return resp
+}
 
 func SaveInt(key string, value int) error {
 
-	err := global.RedisClient.Cmd("SET", key, strconv.Itoa(value)).Err
+	err := doWithRetry("SET", key, strconv.Itoa(value)).Err
 	if err != nil {
 		log.Printf("persistence.SaveInt. key=\"%s\" value=\"%d\". Error %v", key, value, err)
 		return err
@@ -21,7 +38,7 @@ func SaveInt(key string, value int) error {
 
 func SaveIntWithTTL(key string, value, ttl int) error {
 
-	err := global.RedisClient.Cmd("SET", key, strconv.Itoa(value), "EX", ttl).Err
+	err := doWithRetry("SET", key, strconv.Itoa(value), "EX", ttl).Err
 	if err != nil {
 		log.Printf("persistence.SaveInt. key=\"%s\" value=\"%d\". Error %v", key, value, err)
 		return err
@@ -34,7 +51,7 @@ func SaveIntWithTTL(key string, value, ttl int) error {
 
 func SaveUint64(key string, value uint64) error {
 
-	err := global.RedisClient.Cmd("SET", key, strconv.FormatUint(value, 10)).Err
+	err := doWithRetry("SET", key, strconv.FormatUint(value, 10)).Err
 	if err != nil {
 		log.Printf("persistence.SaveUint64. key=\"%s\" value=\"%d\". Error %v", key, value, err)
 		return err
@@ -47,7 +64,7 @@ func SaveUint64(key string, value uint64) error {
 
 func SaveString(key string, value string) error {
 
-	err := global.RedisClient.Cmd("SET", key, value).Err
+	err := doWithRetry("SET", key, value).Err
 	if err != nil {
 		log.Printf("persistence.SaveString. key=\"%s\" value=\"%s\". Error %v", key, value, err)
 		return err
@@ -60,7 +77,7 @@ func SaveString(key string, value string) error {
 
 func SaveStringWithTTL(key, value string, ttl int) error {
 
-	err := global.RedisClient.Cmd("SET", key, value, "EX", ttl).Err
+	err := doWithRetry("SET", key, value, "EX", ttl).Err
 	if err != nil {
 		log.Printf("persistence.SaveString. key=\"%s\" value=\"%d\". Error %v", key, value, err)
 		return err
@@ -73,7 +90,7 @@ func SaveStringWithTTL(key, value string, ttl int) error {
 
 func AddStringToSet(key, value string) error {
 
-	err := global.RedisClient.Cmd("SADD", key, value).Err
+	err := doWithRetry("SADD", key, value).Err
 	if err != nil {
 		log.Printf("persistence.AddStringToSet. set=\"%s\" value=\"%s\". Error %v", key, value, err)
 		return err
@@ -86,7 +103,7 @@ func AddStringToSet(key, value string) error {
 
 func AddStringToList(key, value string) error {
 
-	err := global.RedisClient.Cmd("RPUSH", key, value).Err
+	err := doWithRetry("RPUSH", key, value).Err
 	if err != nil {
 		log.Printf("persistence.AddStringToList. list=\"%s\" value=\"%s\". Error %v", key, value, err)
 		return err
@@ -99,7 +116,7 @@ func AddStringToList(key, value string) error {
 
 func AddStringToSortedSet(key string, score int, value string) error {
 
-	err := global.RedisClient.Cmd("ZADD", key, score, value).Err
+	err := doWithRetry("ZADD", key, score, value).Err
 	if err != nil {
 		log.Printf("persistence.AddStringToSortedSet. set=\"%s\" score=\"%d\" value=\"%s\". Error %v", key, score, value, err)
 		return err
@@ -112,7 +129,7 @@ func AddStringToSortedSet(key string, score int, value string) error {
 
 func AddStringFieldToHash(hashKey, key, value string) error {
 
-	err := global.RedisClient.Cmd("HSET", hashKey, key, value).Err
+	err := doWithRetry("HSET", hashKey, key, value).Err
 	if err != nil {
 		log.Printf("persistence.AddStringFieldToHash. hash=\"%s\" key=\"%s\" value=\"%s\". Error %v", hashKey, key, value, err)
 		return err
@@ -125,7 +142,7 @@ func AddStringFieldToHash(hashKey, key, value string) error {
 
 func RemoveStringFromList(key, value string) error {
 
-	err := global.RedisClient.Cmd("LREM", key, 0, value).Err
+	err := doWithRetry("LREM", key, 0, value).Err
 	if err != nil {
 		log.Printf("persistence.RemoveStringFromList. list=\"%s\" value=\"%s\". Error %v", key, value, err)
 		return err
@@ -138,7 +155,7 @@ func RemoveStringFromList(key, value string) error {
 
 func RemoveFromSortedSet(setKey, key string) error {
 
-	err := global.RedisClient.Cmd("ZREM", setKey, key).Err
+	err := doWithRetry("ZREM", setKey, key).Err
 	if err != nil {
 		log.Printf("persistence.RemoveFromSortedSet. sset=\"%s\" key=\"%s\". Error %v", setKey, key, err)
 		return err
@@ -151,7 +168,7 @@ func RemoveFromSortedSet(setKey, key string) error {
 
 func RemoveFromSortedSetByScore(setKey string, scoreMin, scoreMax int) error {
 
-	err := global.RedisClient.Cmd("ZREMRANGEBYSCORE", setKey, scoreMin, scoreMax).Err
+	err := doWithRetry("ZREMRANGEBYSCORE", setKey, scoreMin, scoreMax).Err
 	if err != nil {
 		log.Printf("persistence.RemoveFromSortedSetByScore. sset=\"%s\" scoreMin=\"%d\" scoreMax=\"%d\" value=\"%s\". Error %v", setKey, scoreMin, scoreMax, err)
 		return err
@@ -164,7 +181,7 @@ func RemoveFromSortedSetByScore(setKey string, scoreMin, scoreMax int) error {
 
 func GetFullHash(hashKey string) ([]string, error) {
 
-	result, err := global.RedisClient.Cmd("HGETALL", hashKey).List()
+	result, err := doWithRetry("HGETALL", hashKey).List()
 	if err != nil {
 		log.Printf("persistence.getFullHash. hash=\"%s\". Error %v", hashKey, err)
 		return nil, err
@@ -175,7 +192,7 @@ func GetFullHash(hashKey string) ([]string, error) {
 
 func GetStringFieldFromHash(hashKey, key string) (string, error) {
 
-	result, err := global.RedisClient.Cmd("HGET", hashKey, key).Str()
+	result, err := doWithRetry("HGET", hashKey, key).Str()
 	if err != nil {
 		log.Printf("persistence.GetStringFieldFromHash. hash=\"%s\" key=\"%s\". Error %v", hashKey, key, err)
 		return "", err
@@ -186,7 +203,7 @@ func GetStringFieldFromHash(hashKey, key string) (string, error) {
 
 func GetString(key string) (string, error) {
 
-	result, err := global.RedisClient.Cmd("GET", key).Str()
+	result, err := doWithRetry("GET", key).Str()
 	if err != nil {
 		log.Printf("persistence.GetString. key=\"%s\". Error %v", key, err)
 		return "", err
@@ -197,7 +214,7 @@ func GetString(key string) (string, error) {
 
 func GetStringsFromSet(key string) ([]string, error) {
 
-	result, err := global.RedisClient.Cmd("SMEMBERS", key).List()
+	result, err := doWithRetry("SMEMBERS", key).List()
 	if err != nil {
 		log.Printf("persistence.GetStringsFromSet. set=\"%s\". Error %v", key, err)
 		return nil, err
@@ -208,7 +225,7 @@ func GetStringsFromSet(key string) ([]string, error) {
 
 func GetStringsFromSortedSet(key string) ([]string, error) {
 
-	result, err := global.RedisClient.Cmd("ZRANGE", key, 0, -1).List()
+	result, err := doWithRetry("ZRANGE", key, 0, -1).List()
 	if err != nil {
 		log.Printf("persistence.GetStringsFromSortedSet. sset=\"%s\". Error %v", key, err)
 		return nil, err
@@ -219,7 +236,7 @@ func GetStringsFromSortedSet(key string) ([]string, error) {
 
 func GetStringsFromList(key string) ([]string, error) {
 
-	result, err := global.RedisClient.Cmd("LRANGE", key, 0, -1).List()
+	result, err := doWithRetry("LRANGE", key, 0, -1).List()
 	if err != nil {
 		log.Printf("persistence.GetStringsFromList. list=\"%s\". Error %v", key, err)
 		return nil, err
@@ -230,7 +247,7 @@ func GetStringsFromList(key string) ([]string, error) {
 
 func GetListSize(key string) (int, error) {
 
-	result, err := global.RedisClient.Cmd("LLEN", key).Int()
+	result, err := doWithRetry("LLEN", key).Int()
 	if err != nil {
 		log.Printf("persistence.GetListSize. list=\"%s\". Error %v", key, err)
 		return -1, err
@@ -241,7 +258,7 @@ func GetListSize(key string) (int, error) {
 
 func GetSortedSetSize(key string) (int, error) {
 
-	result, err := global.RedisClient.Cmd("ZCARD", key).Int()
+	result, err := doWithRetry("ZCARD", key).Int()
 	if err != nil {
 		log.Printf("persistence.GetSortedSetSize. sset=\"%s\". Error %v", key, err)
 		return -1, err
@@ -252,7 +269,7 @@ func GetSortedSetSize(key string) (int, error) {
 
 func Exists(key string) (bool, error) {
 
-	result, err := global.RedisClient.Cmd("EXISTS", key).Int()
+	result, err := doWithRetry("EXISTS", key).Int()
 	if err != nil {
 		log.Printf("persistence.Exists. key=\"%s\". Error %v", key, err)
 		return false, err
@@ -263,7 +280,7 @@ func Exists(key string) (bool, error) {
 
 func Delete(key string) (bool, error) {
 
-	result, err := global.RedisClient.Cmd("DEL", key).Int()
+	result, err := doWithRetry("DEL", key).Int()
 	if err != nil {
 		log.Printf("persistence.Delete. key=\"%s\". Error %v", key, err)
 		return false, err

@@ -1,5 +1,7 @@
 package global
 
-import "github.com/mediocregopher/radix.v2/redis"
+import (
+	"github.com/mediocregopher/radix.v2/pool"
+)
 
-var RedisClient *redis.Client
+var RedisPool *pool.Pool
