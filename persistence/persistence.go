@@ -155,6 +155,19 @@ func RemoveStringFromList(key, value string) error {
 	return nil
 }
 
+func RemoveFromSet(setKey, key string) error {
+
+	err := doWithRetry("SREM", setKey, key).Err
+	if err != nil {
+		log.Printf("persistence.RemoveFromSet. set=\"%s\" key=\"%s\". Error %v", setKey, key, err)
+		return err
+	}
+
+	log.Printf("persistence.RemoveFromSet. Removed set=\"%s\" key=\"%s\"", setKey, key)
+
+	return nil
+}
+
 func RemoveFromSortedSet(setKey, key string) error {
 
 	err := doWithRetry("ZREM", setKey, key).Err

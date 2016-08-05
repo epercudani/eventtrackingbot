@@ -179,7 +179,7 @@ func GetGroupEventNames(groupId int64) (events []string) {
 func GetParticipantsToEvent(groupId int64, eventName string) (participants []types.User) {
 
 	key := fmt.Sprintf(persistence.KEY_EVENT_PARTICIPANTS, groupId, eventName)
-	participantsJson, err := persistence.GetStringsFromList(key)
+	participantsJson, err := persistence.GetStringsFromSet(key)
 	if err != nil {
 		log.Printf("Error getting participants for group %d: %v", groupId, err)
 	}
@@ -207,7 +207,7 @@ func AddParticipantToEvent(groupId int64, eventName string, participant types.Us
 		return err
 	}
 
-	return persistence.AddStringToList(key, string(participantJson))
+	return persistence.AddStringToSet(key, string(participantJson))
 }
 
 func RemoveParticipantFromEvent(groupId int64, eventName string, participant types.User) (err error) {
@@ -220,5 +220,5 @@ func RemoveParticipantFromEvent(groupId int64, eventName string, participant typ
 		return err
 	}
 
-	return persistence.RemoveStringFromList(key, string(participantJson))
+	return persistence.RemoveFromSet(key, string(participantJson))
 }
