@@ -1,6 +1,19 @@
 {
 	"comment": "",
 	"ignore": "test",
-	"package": [],
+	"package": [
+		{
+			"checksumSHA1": "8ZSsHmBOqTGuBju5jVDV77qGYGo=",
+			"path": "github.com/mediocregopher/radix.v2/pool",
+			"revision": "7bdaf7c45ec452ca691ab20535471e24460f0876",
+			"revisionTime": "2016-01-29T23:10:54Z"
+		},
+		{
+			"checksumSHA1": "7ETBsPIQzBxW+CtxAPWwlrOnoOE=",
+			"path": "github.com/mediocregopher/radix.v2/redis",
+			"revision": "7bdaf7c45ec452ca691ab20535471e24460f0876",
+			"revisionTime": "2016-01-29T23:10:54Z"
+		}
+	],
 	"rootPath": "github.com/kinslayere/eventtrackingbot"
 }
