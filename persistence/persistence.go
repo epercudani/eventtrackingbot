@@ -232,7 +232,7 @@ func GetInt(key string) (int, error) {
 	result, err := doWithRetry("GET", key).Int()
 	if err != nil {
 		log.Printf("persistence.GetString. key=\"%s\". Error %v", key, err)
-		return "", err
+		return 0, err
 	}
 
 	return result, nil
