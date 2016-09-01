@@ -87,7 +87,7 @@ func SendAttendanceList(chatId, replyToMessageId int64, eventDescription string,
 
 	text.WriteString(fmt.Sprintf("%d %s for %s:", len(participants), participantWord, eventDescription))
 	for _, participant := range participants {
-		text.WriteString(fmt.Sprintf("\n%s", participant.FirstName))
+		text.WriteString(fmt.Sprintf("\n%s %s", participant.FirstName, participant.LastName))
 	}
 
 	smr := requests.NewSendMessageRequest()
@@ -210,7 +210,7 @@ func SendTooManyParametersMessage(chatId int64) (err error) {
 
 	smr := requests.NewSendMessageRequest()
 	smr.AddChatId(chatId)
-	smr.AddText(fmt.Sprintf("Too many parameters. Please use: /set_when"))
+	smr.AddText("Too many parameters. Please use: /set_when")
 	_, err = smr.Execute()
 	if err != nil {
 		log.Printf("Error sending message: %v", err)

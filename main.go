@@ -14,7 +14,7 @@ import (
 func receiveAndProcessUpdates() {
 
 	var nextUpdateId int64
-	log.Printf("Starting to listen updates")
+	log.Println("Starting to listen updates")
 	getUpdatesRequest := requests.NewGetUpdatesRequest()
 	getUpdatesRequest.SetTimeout(60)
 	getUpdatesRequest.SetLimit(global.GET_UPDATES_DEFAULT_LIMIT)
@@ -38,7 +38,7 @@ func receiveAndProcessUpdates() {
 
 func main() {
 
-	log.Printf("Starting bot")
+	log.Println("Starting bot")
 
 	redisNetwork := "tcp"
 	redisUrlRaw, ok := syscall.Getenv("REDIS_URL")
@@ -86,5 +86,5 @@ func main() {
 
 	receiveAndProcessUpdates()
 
-	log.Printf("Finishing bot")
+	log.Println("Finishing bot")
 }
