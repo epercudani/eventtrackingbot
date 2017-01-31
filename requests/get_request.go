@@ -24,7 +24,7 @@ func (r *GetRequest) Execute(response interface{}) (err error) {
 		url += "?" + paramsString
 	}
 
-	log.Printf("Request:url: %s", url)
+	//log.Printf("Request:url: %s", url)
 
 	resp, err := http.Get(url)
 	if err != nil {
@@ -37,7 +37,7 @@ func (r *GetRequest) Execute(response interface{}) (err error) {
 		log.Fatal(err)
 	}
 
-	log.Printf("Request:response:body: %s", body)
+	//log.Printf("Request:response:body: %s", body)
 
 	return json.Unmarshal(body, &response)
 }

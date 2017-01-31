@@ -8,8 +8,8 @@ import (
 	"github.com/kinslayere/eventtrackingbot/types"
 )
 
-func GetEventKeyFromGroupAndName(groupId int64, eventName string) (eventKey string) {
-	return fmt.Sprintf(persistence.KEY_EVENT, groupId, eventName)
+func GetEventKeyFromGroupAndName(chatId int64, eventName string) string {
+	return fmt.Sprintf(persistence.KEY_EVENT, chatId, eventName)
 }
 
 func GetEvent(eventKey string) (event types.Event) {
@@ -31,16 +31,16 @@ func GetEvent(eventKey string) (event types.Event) {
 	return
 }
 
-func CreateEvent(groupId int64, eventName string) {
+func CreateEvent(chatId int64, eventName string) {
 
 	event := types.Event{ Name: eventName }
 
-	SaveEvent(groupId, event)
-	SetCurrentEvent(groupId, eventName)
-	AddEventToGroup(groupId, eventName)
+	SaveEvent(chatId, event)
+	SetCurrentEvent(chatId, eventName)
+	AddEventToGroup(chatId, eventName)
 }
 
-func SaveEvent(groupId int64, event types.Event) error {
+func SaveEvent(chatId int64, event types.Event) error {
 
 	eventJson, err := json.Marshal(event)
 	if err != nil {
@@ -48,7 +48,7 @@ func SaveEvent(groupId int64, event types.Event) error {
 		return err
 	}
 
-	eventKey := GetEventKeyFromGroupAndName(groupId, event.Name)
+	eventKey := GetEventKeyFromGroupAndName(chatId, event.Name)
 	err = persistence.SaveString(eventKey, string(eventJson))
 	if err != nil {
 		log.Printf("Error saving event: %v", err)
@@ -58,22 +58,26 @@ func SaveEvent(groupId int64, event types.Event) error {
 	return nil
 }
 
-func DeleteEvent(groupId int64, eventName string) {
+func DeleteEvent(chatId int64, eventName string) {
 
-	eventKey := GetEventKeyFromGroupAndName(groupId, eventName)
+	currentEvent := GetCurrentEvent(chatId)
+	eventKey := GetEventKeyFromGroupAndName(chatId, eventName)
 	_, err := persistence.Delete(eventKey)
 	if err != nil {
 		log.Printf("Error deleting event: %v", err)
 		return
 	}
 
-	UnsetCurrentEvent(groupId)
-	RemoveEventFromGroup(groupId, eventName)
+	if currentEvent.Name == eventName {
+		UnsetCurrentEvent(chatId)
+	}
+
+	RemoveEventFromGroup(chatId, eventName)
 }
 
-func GetCurrentEvent(groupId int64) (event types.Event) {
+func GetCurrentEvent(chatId int64) types.Event {
 
-	eventKey, err := persistence.GetString(fmt.Sprintf(persistence.KEY_CURRENT_EVENT, groupId))
+	eventKey, err := persistence.GetString(fmt.Sprintf(persistence.KEY_CURRENT_EVENT, chatId))
 	if err != nil {
 		log.Printf("Error getting current event key: %v", err)
 	}
@@ -97,40 +101,28 @@ func GetEventDescription(event types.Event) string {
 	return description.String()
 }
 
-func GetEventDetails(event types.Event) string {
+func SetCurrentEvent(chatId int64, eventName string) {
 
-	var details bytes.Buffer
-
-	details.WriteString(GetEventDescription(event))
-	if event.Place != "" {
-		details.WriteString(fmt.Sprintf(" at %s", event.Place))
-	}
-
-	return details.String()
-}
-
-func SetCurrentEvent(groupId int64, eventName string) {
-
-	eventKey := fmt.Sprintf(persistence.KEY_EVENT, groupId, eventName)
-	err := persistence.SaveString(fmt.Sprintf(persistence.KEY_CURRENT_EVENT, groupId), eventKey)
+	eventKey := fmt.Sprintf(persistence.KEY_EVENT, chatId, eventName)
+	err := persistence.SaveString(fmt.Sprintf(persistence.KEY_CURRENT_EVENT, chatId), eventKey)
 	if err != nil {
 		log.Printf("Error setting current event: %v", err)
 		return
 	}
 }
 
-func UnsetCurrentEvent(groupId int64) {
+func UnsetCurrentEvent(chatId int64) {
 
-	_, err := persistence.Delete(fmt.Sprintf(persistence.KEY_CURRENT_EVENT, groupId))
+	_, err := persistence.Delete(fmt.Sprintf(persistence.KEY_CURRENT_EVENT, chatId))
 	if err != nil {
 		log.Printf("Error unsetting current event: %v", err)
 		return
 	}
 }
 
-func AddEventToGroup(groupId int64, eventName string) {
+func AddEventToGroup(chatId int64, eventName string) {
 
-	key := fmt.Sprintf(persistence.KEY_GROUP_EVENTS, groupId)
+	key := fmt.Sprintf(persistence.KEY_GROUP_EVENTS, chatId)
 	index, err := persistence.GetSortedSetSize(key)
 	if err != nil {
 		return
@@ -142,46 +134,52 @@ func AddEventToGroup(groupId int64, eventName string) {
 	}
 }
 
-func RemoveEventFromGroup(groupId int64, eventName string) {
+func RemoveEventFromGroup(chatId int64, eventName string) {
 
-	err := persistence.RemoveFromSortedSet(fmt.Sprintf(persistence.KEY_GROUP_EVENTS, groupId), eventName)
+	err := persistence.RemoveFromSortedSet(fmt.Sprintf(persistence.KEY_GROUP_EVENTS, chatId), eventName)
 	if err != nil {
 		log.Printf("Error removing event from group: %v", err)
 		return
 	}
+
+	_, err = persistence.Delete(fmt.Sprintf(persistence.KEY_EVENT_PARTICIPANTS, chatId, eventName))
+	if err != nil {
+		log.Printf("Error removing participants data when deleting event: %v", err)
+		return
+	}
 }
 
-func GetGroupEvents(groupId int64) (events []types.Event) {
+func GetGroupEvents(chatId int64) (events []types.Event) {
 
-	eventNames, err := persistence.GetStringsFromSortedSet(fmt.Sprintf(persistence.KEY_GROUP_EVENTS, groupId))
+	eventNames, err := persistence.GetStringsFromSortedSet(fmt.Sprintf(persistence.KEY_GROUP_EVENTS, chatId))
 	if err != nil {
-		log.Printf("Error getting event names for group %d: %v", groupId, err)
+		log.Printf("Error getting event names for group %d: %v", chatId, err)
 	}
 
 	for _, eventName := range eventNames {
-		eventKey := GetEventKeyFromGroupAndName(groupId, eventName)
+		eventKey := GetEventKeyFromGroupAndName(chatId, eventName)
 		events = append(events, GetEvent(eventKey))
 	}
 
 	return
 }
 
-func GetGroupEventNames(groupId int64) (events []string) {
+func GetGroupEventNames(chatId int64) (events []string) {
 
-	events, err := persistence.GetStringsFromSortedSet(fmt.Sprintf(persistence.KEY_GROUP_EVENTS, groupId))
+	events, err := persistence.GetStringsFromSortedSet(fmt.Sprintf(persistence.KEY_GROUP_EVENTS, chatId))
 	if err != nil {
-		log.Printf("Error getting events for group %d: %v", groupId, err)
+		log.Printf("Error getting events for group %d: %v", chatId, err)
 	}
 
 	return
 }
 
-func GetParticipantsToEvent(groupId int64, eventName string) (participants []types.User) {
+func GetParticipantsToEvent(chatId int64, eventName string) (participants []types.User) {
 
-	key := fmt.Sprintf(persistence.KEY_EVENT_PARTICIPANTS, groupId, eventName)
+	key := fmt.Sprintf(persistence.KEY_EVENT_PARTICIPANTS, chatId, eventName)
 	participantsJson, err := persistence.GetStringsFromSet(key)
 	if err != nil {
-		log.Printf("Error getting participants for group %d: %v", groupId, err)
+		log.Printf("Error getting participants for group %d: %v", chatId, err)
 	}
 
 	var user types.User
@@ -197,9 +195,9 @@ func GetParticipantsToEvent(groupId int64, eventName string) (participants []typ
 	return
 }
 
-func AddParticipantToEvent(groupId int64, eventName string, participant types.User) (err error) {
+func AddParticipantToEvent(chatId int64, eventName string, participant types.User) (err error) {
 
-	key := fmt.Sprintf(persistence.KEY_EVENT_PARTICIPANTS, groupId, eventName)
+	key := fmt.Sprintf(persistence.KEY_EVENT_PARTICIPANTS, chatId, eventName)
 
 	participantJson, err := json.Marshal(participant)
 	if err != nil {
@@ -210,9 +208,9 @@ func AddParticipantToEvent(groupId int64, eventName string, participant types.Us
 	return persistence.AddStringToSet(key, string(participantJson))
 }
 
-func RemoveParticipantFromEvent(groupId int64, eventName string, participant types.User) (err error) {
+func RemoveParticipantFromEvent(chatId int64, eventName string, participant types.User) (err error) {
 
-	key := fmt.Sprintf(persistence.KEY_EVENT_PARTICIPANTS, groupId, eventName)
+	key := fmt.Sprintf(persistence.KEY_EVENT_PARTICIPANTS, chatId, eventName)
 
 	participantJson, err := json.Marshal(participant)
 	if err != nil {

@@ -8,7 +8,7 @@ import (
 )
 
 type GetUpdatesResponse struct {
-	Ok			bool			`json:"ok"`
+	Ok		bool		`json:"ok"`
 	Result		[]types.Update	`json:"result"`
 }
 

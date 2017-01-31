@@ -6,60 +6,35 @@ import (
 	"log"
 	"github.com/kinslayere/eventtrackingbot/global"
 	"github.com/kinslayere/eventtrackingbot/persistence"
-	"github.com/kinslayere/eventtrackingbot/requests"
 	"github.com/kinslayere/eventtrackingbot/types"
 	"github.com/kinslayere/eventtrackingbot/services"
-	"bytes"
 	"regexp"
 	"strconv"
 )
 
-func processCreateEventWithoutName(update types.Update) (err error) {
+func processCreateEventWithoutName(update types.Update) error {
 
 	fields := strings.Fields(strings.TrimSpace(update.Message.Text))
-	smr := requests.NewSendMessageRequest()
 
 	switch len(fields) {
 	case 1:
-
-		// Send acknowledge message and wait for event name
-		smr.AddChatId(update.Message.Chat.Id)
-		smr.AddText(fmt.Sprintf("Hi %s! I'll help you to create your event. Please tell me the event's name.", update.Message.From.FirstName))
-		smr.AddReplyToMessageId(update.Message.MessageId)
-		smr.AddForceReply( types.ForceReply { ForceReply: true, Selective: true } )
-		response, err := smr.Execute()
-		if err != nil {
-			log.Printf("Error sending message: %v", err)
-			return err
-		}
-
-		messageSent := response.Result
-		log.Printf("Message sent id: %d in response to: %s", messageSent.MessageId, messageSent.ReplyToMessage.Text)
-		err = services.SetPendingResponseToMessage(update.Message.From.Id, messageSent.MessageId, global.MESSAGE_TYPE_EVENT_PROVIDE_NAME)
-		if err != nil {
-			return err
-		}
+		return services.SendResponseToCreateEventMessage(
+			update.Message.Chat.Id, update.Message.MessageId,
+			update.Message.From.Id, update.Message.From.FirstName)
 
 	default:
-		smr.AddChatId(update.Message.Chat.Id)
-		smr.AddText(fmt.Sprintf("Too many parameters. Please use: /create_event"))
-		_, err = smr.Execute()
-		if err != nil {
-			log.Printf("Error sending message: %v", err)
-			return err
-		}
+		return services.SendTooManyParametersMessage(update.Message.Chat.Id, global.COMMAND_NAME_CREATE_EVENT)
 	}
 
 	return nil
 }
 
-func processSetWhen(update types.Update) (err error) {
+func processSetWhen(update types.Update) error {
 
 	fields := strings.Fields(strings.TrimSpace(update.Message.Text))
 
 	switch len(fields) {
 	case 1:
-
 		currentEvent := services.GetCurrentEvent(update.Message.Chat.Id)
 		if currentEvent.Name != "" {
 			// Send acknowledge message and wait for event name
@@ -69,19 +44,18 @@ func processSetWhen(update types.Update) (err error) {
 		}
 
 	default:
-		services.SendTooManyParametersMessage(update.Message.Chat.Id)
+		services.SendTooManyParametersMessage(update.Message.Chat.Id, global.COMMAND_NAME_SET_WHEN)
 	}
 
 	return nil
 }
 
-func processSetWhere(update types.Update) (err error) {
+func processSetWhere(update types.Update) error {
 
 	fields := strings.Fields(strings.TrimSpace(update.Message.Text))
 
 	switch len(fields) {
 	case 1:
-
 		currentEvent := services.GetCurrentEvent(update.Message.Chat.Id)
 		if currentEvent.Name != "" {
 			// Send acknowledge message and wait for event name
@@ -91,92 +65,41 @@ func processSetWhere(update types.Update) (err error) {
 		}
 
 	default:
-		smr := requests.NewSendMessageRequest()
-		smr.AddChatId(update.Message.Chat.Id)
-		smr.AddText(fmt.Sprintf("Too many parameters. Please use: /set_when"))
-		_, err = smr.Execute()
-		if err != nil {
-			log.Printf("Error sending message: %v", err)
-			return err
-		}
+		services.SendTooManyParametersMessage(update.Message.Chat.Id, global.COMMAND_NAME_SET_WHERE)
 	}
 
 	return nil
 }
 
-func processDeleteEventWithoutName(update types.Update) (err error) {
+func processDeleteEventWithoutName(update types.Update) error {
 
 	fields := strings.Fields(strings.TrimSpace(update.Message.Text))
-	smr := requests.NewSendMessageRequest()
 
 	switch len(fields) {
 	case 1:
-
-		var text bytes.Buffer
-
-		events := services.GetGroupEventNames(update.Message.Chat.Id)
-		if len(events) > 0 {
-			text.WriteString(fmt.Sprintf("Hi %s! Which event do you want to delete?", update.Message.From.FirstName))
-			for i, event := range events {
-				text.WriteString(fmt.Sprintf("\n/%d %s", i + 1, event))
-			}
-		} else {
-			text.WriteString(fmt.Sprintf("There are no events in this group."))
-		}
-
-		smr.AddChatId(update.Message.Chat.Id)
-		smr.AddText(text.String())
-		smr.AddReplyToMessageId(update.Message.MessageId)
-		smr.AddForceReply( types.ForceReply { ForceReply: true, Selective: true } )
-		response, err := smr.Execute()
-		if err != nil {
-			log.Printf("Error sending message: %v", err)
-			return err
-		}
-
-		messageSent := response.Result
-		log.Printf("Message sent id: %d in response to: %s", messageSent.MessageId, messageSent.ReplyToMessage.Text)
-		err = services.SetPendingResponseToMessage(update.Message.From.Id, messageSent.MessageId, global.MESSAGE_TYPE_DELETE_EVENT_PROVIDE_INDEX)
-		if err != nil {
-			return err
-		}
+		return services.SendResponseToDeleteEventMessage(
+			update.Message.Chat.Id, update.Message.MessageId,
+			update.Message.From.Id, update.Message.From.FirstName)
 
 	default:
-		smr.AddChatId(update.Message.Chat.Id)
-		smr.AddText(fmt.Sprintf("Too many parameters. Please use: /delete_event"))
-		_, err = smr.Execute()
-		if err != nil {
-			log.Printf("Error sending message: %v", err)
-			return err
-		}
+		return services.SendTooManyParametersMessage(update.Message.Chat.Id, global.COMMAND_NAME_DELETE_EVENT)
 	}
 
 	return nil
 }
 
-func processSetEventName(update types.Update) (err error) {
-
-	log.Printf("Processing event name")
+func processSetEventName(update types.Update) error {
 
 	eventName := update.Message.Text
 	if len(strings.TrimSpace(eventName)) > 0 {
 		services.CreateEvent(update.Message.Chat.Id, eventName)
 	}
 
-	smr := requests.NewSendMessageRequest()
-	smr.AddChatId(update.Message.Chat.Id)
-	smr.AddText(fmt.Sprintf("Congrats %s! Event \"%s\" was created and set as the current event in this group.", update.Message.From.FirstName, eventName))
-	_, err = smr.Execute()
-	if err != nil {
-		log.Printf("Error sending message: %v", err)
-	}
-
-	return
+	return services.SendCreatedEventAcknowledge(update.Message.Chat.Id, update.Message.From.FirstName, eventName)
 }
 
 func processSetEventProperty(update types.Update, property string) (err error) {
 
-	log.Printf(fmt.Sprintf("Processing event %s with value \"%s\"", property, update.Message.Text))
 	if len(strings.TrimSpace(update.Message.Text)) == 0 {
 		return fmt.Errorf("Error setting property %s with empty value", property)
 	}
@@ -196,20 +119,12 @@ func processSetEventProperty(update types.Update, property string) (err error) {
 		return
 	}
 
-	smr := requests.NewSendMessageRequest()
-	smr.AddChatId(update.Message.Chat.Id)
-	smr.AddText(fmt.Sprintf("Ok! Event \"%s\" %s was set to \"%s\".", currentEvent.Name, property, update.Message.Text))
-	_, err = smr.Execute()
-	if err != nil {
-		log.Printf("Error sending message: %v", err)
-	}
-
-	return
+	return services.SendEventPropertySetAcknowledge(update.Message.Chat.Id, currentEvent.Name, property, update.Message.Text)
 }
 
-func processIndexToDeleteEvent(update types.Update) (err error) {
+func processIndexToDeleteEvent(update types.Update) error {
 
-	log.Printf("Processing delete index")
+	log.Print("Processing delete index")
 
 	var eventName string
 
@@ -236,26 +151,12 @@ func processIndexToDeleteEvent(update types.Update) (err error) {
 		}
 	}
 
-	smr := requests.NewSendMessageRequest()
-	smr.AddChatId(update.Message.Chat.Id)
-
-	if deleted {
-		smr.AddText(fmt.Sprintf("%s, you have successfully deleted event \"%s\".", update.Message.From.FirstName, eventName))
-	} else {
-		smr.AddText(fmt.Sprintf("%s is not a valid option.", update.Message.Text))
-	}
-
-	_, err = smr.Execute()
-	if err != nil {
-		log.Printf("Error sending message: %v", err)
-	}
-
-	return
+	return services.SendDeletedEventAcknowledge(update.Message.Chat.Id, update.Message.From.FirstName, eventName, update.Message.Text, deleted)
 }
 
 func processIndexToSelectCurrentEvent(update types.Update) (err error) {
 
-	log.Printf("Processing select index")
+	log.Print("Processing select index")
 
 	var eventName string
 
@@ -285,57 +186,17 @@ func processIndexToSelectCurrentEvent(update types.Update) (err error) {
 		}
 	}
 
-	smr := requests.NewSendMessageRequest()
-	smr.AddChatId(update.Message.Chat.Id)
-
-	if selected {
-		smr.AddText(fmt.Sprintf("%s is now set as the current event in this group.", eventName))
-	} else {
-		smr.AddText(fmt.Sprintf("%s is not a valid option.", update.Message.Text))
-	}
-
-	_, err = smr.Execute()
-	if err != nil {
-		log.Printf("Error sending message: %v", err)
-		return err
-	}
-
-	return nil
+	return services.SendSelectedCurrentEventAcknowledge(update.Message.Chat.Id, eventName, update.Message.Text, selected)
 }
 
 func processAllEvents(update types.Update) (err error) {
 
 	events := services.GetGroupEvents(update.Message.Chat.Id)
 
-	var text bytes.Buffer
-	if len(events) > 0 {
-		currentEvent := services.GetCurrentEvent(update.Message.Chat.Id)
-
-		text.WriteString(fmt.Sprintf("Events available in this group are:"))
-		for _, event := range events {
-			if (currentEvent.Name == event.Name) {
-				text.WriteString(fmt.Sprintf("\n%s [C]", services.GetEventDescription(event)))
-			} else {
-				text.WriteString(fmt.Sprintf("\n%s", services.GetEventDescription(event)))
-			}
-		}
-	} else {
-		text.WriteString(fmt.Sprintf("There are no events in this group."))
-	}
-
-	smr := requests.NewSendMessageRequest()
-	smr.AddChatId(update.Message.Chat.Id)
-	smr.AddText(text.String())
-	_, err = smr.Execute()
-	if err != nil {
-		log.Printf("Error sending message: %v", err)
-		return err
-	}
-
-	return nil
+	return services.SendAllEventsMessage(update.Message.Chat.Id, events)
 }
 
-func processParticipants(update types.Update) (err error) {
+func processParticipants(update types.Update) error {
 
 	currentEvent := services.GetCurrentEvent(update.Message.Chat.Id)
 	if currentEvent.Name != "" {
@@ -350,7 +211,7 @@ func processParticipants(update types.Update) (err error) {
 	}
 }
 
-func processWillGo(update types.Update) (err error) {
+func processWillGo(update types.Update) error {
 
 	currentEvent := services.GetCurrentEvent(update.Message.Chat.Id)
 	if currentEvent.Name != "" {
@@ -366,7 +227,7 @@ func processWillGo(update types.Update) (err error) {
 	}
 }
 
-func processWontGo(update types.Update) (err error) {
+func processWontGo(update types.Update) error {
 
 	currentEvent := services.GetCurrentEvent(update.Message.Chat.Id)
 	if currentEvent.Name != "" {
@@ -382,7 +243,7 @@ func processWontGo(update types.Update) (err error) {
 	}
 }
 
-func processCurrentEvent(update types.Update) (err error) {
+func processCurrentEvent(update types.Update) error {
 
 	currentEvent := services.GetCurrentEvent(update.Message.Chat.Id)
 	if currentEvent.Name != "" {
@@ -394,7 +255,7 @@ func processCurrentEvent(update types.Update) (err error) {
 	return nil
 }
 
-func processSelectEvent(update types.Update) (err error) {
+func processSelectEvent(update types.Update) error {
 
 	events := services.GetGroupEvents(update.Message.Chat.Id)
 	if len(events) > 0 {

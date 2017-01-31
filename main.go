@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"github.com/mediocregopher/radix.v2/pool"
 	"github.com/mediocregopher/radix.v2/redis"
+	"time"
 )
 
 func receiveAndProcessUpdates() {
@@ -63,7 +64,7 @@ func main() {
 
 	connectFunc := pool.DialFunc(func(network, addr string) (*redis.Client, error) {
 
-		client, err := redis.Dial(network, addr)
+		client, err := redis.DialTimeout(network, addr, time.Duration(5 * time.Second))
 		if err != nil {
 			return nil, err
 
@@ -83,6 +84,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error connecting to redis host %s by %s. Error is: %v", redisUrl.Host, redisNetwork, err)
 	}
+
+	log.Println("Bot started")
 
 	receiveAndProcessUpdates()
 

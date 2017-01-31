@@ -82,7 +82,7 @@ func processUpdate(update types.Update) {
 
 			if isResponse {
 
-				log.Printf("Response received")
+				log.Print("Response received")
 
 				messageType, err := persistence.GetString(fmt.Sprintf(persistence.KEY_MESSAGE_TYPE, update.Message.ReplyToMessage.MessageId))
 				if err != nil {
@@ -110,7 +110,7 @@ func processUpdate(update types.Update) {
 				}
 			}
 		} else {
-			log.Printf("Other message received")
+			log.Print("Other message received")
 		}
 	}
 
