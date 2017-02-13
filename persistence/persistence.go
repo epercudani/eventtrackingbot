@@ -33,8 +33,6 @@ func SaveInt(key string, value int) error {
 		return err
 	}
 
-	log.Printf("persistence.SaveInt. Saved key=\"%s\" value=\"%d\"", key, value)
-
 	return nil
 }
 
@@ -45,8 +43,6 @@ func SaveIntWithTTL(key string, value, ttl int) error {
 		log.Printf("persistence.SaveInt. key=\"%s\" value=\"%d\". Error %v", key, value, err)
 		return err
 	}
-
-	log.Printf("persistence.SaveInt. Saved key=\"%s\" value=\"%d\"", key, value)
 
 	return nil
 }
@@ -59,8 +55,6 @@ func SaveUint64(key string, value uint64) error {
 		return err
 	}
 
-	log.Printf("persistence.SaveUint64. Saved key=\"%s\" value=\"%d\"", key, value)
-
 	return nil
 }
 
@@ -71,8 +65,6 @@ func SaveString(key string, value string) error {
 		log.Printf("persistence.SaveString. key=\"%s\" value=\"%s\". Error %v", key, value, err)
 		return err
 	}
-
-	log.Printf("persistence.SaveString. Saved key=\"%s\" value=\"%s\"", key, value)
 
 	return nil
 }
@@ -85,8 +77,6 @@ func SaveStringWithTTL(key, value string, ttl int) error {
 		return err
 	}
 
-	log.Printf("persistence.SaveString. Saved key=\"%s\" value=\"%s\"", key, value)
-
 	return nil
 }
 
@@ -97,8 +87,6 @@ func AddStringToSet(key, value string) error {
 		log.Printf("persistence.AddStringToSet. set=\"%s\" value=\"%s\". Error %v", key, value, err)
 		return err
 	}
-
-	log.Printf("persistence.AddStringToSet. Saved set=\"%s\" value=\"%s\"", key, value)
 
 	return nil
 }
@@ -111,8 +99,6 @@ func AddStringToList(key, value string) error {
 		return err
 	}
 
-	log.Printf("persistence.AddStringToList. Saved list=\"%s\" value=\"%s\"", key, value)
-
 	return nil
 }
 
@@ -123,8 +109,6 @@ func AddStringToSortedSet(key string, score int, value string) error {
 		log.Printf("persistence.AddStringToSortedSet. set=\"%s\" score=\"%d\" value=\"%s\". Error %v", key, score, value, err)
 		return err
 	}
-
-	log.Printf("persistence.AddStringToSortedSet. Saved set=\"%s\" score=\"%d\" value=\"%s\"", key, score, value)
 
 	return nil
 }
@@ -137,8 +121,6 @@ func AddStringFieldToHash(hashKey, key, value string) error {
 		return err
 	}
 
-	log.Printf("persistence.AddStringFieldToHash. Saved hash=\"%s\" key=\"%s\" value=\"%s\"", hashKey, key, value)
-
 	return nil
 }
 
@@ -149,8 +131,6 @@ func RemoveStringFromList(key, value string) error {
 		log.Printf("persistence.RemoveStringFromList. list=\"%s\" value=\"%s\". Error %v", key, value, err)
 		return err
 	}
-
-	log.Printf("persistence.RemoveStringFromList. Removed list=\"%s\" value=\"%s\"", key, value)
 
 	return nil
 }
@@ -163,8 +143,6 @@ func RemoveFromSet(setKey, key string) error {
 		return err
 	}
 
-	log.Printf("persistence.RemoveFromSet. Removed set=\"%s\" key=\"%s\"", setKey, key)
-
 	return nil
 }
 
@@ -176,8 +154,6 @@ func RemoveFromSortedSet(setKey, key string) error {
 		return err
 	}
 
-	log.Printf("persistence.RemoveFromSortedSet. Saved set=\"%s\" key=\"%s\"", setKey, key)
-
 	return nil
 }
 
@@ -185,11 +161,9 @@ func RemoveFromSortedSetByScore(setKey string, scoreMin, scoreMax int) error {
 
 	err := doWithRetry("ZREMRANGEBYSCORE", setKey, scoreMin, scoreMax).Err
 	if err != nil {
-		log.Printf("persistence.RemoveFromSortedSetByScore. sset=\"%s\" scoreMin=\"%d\" scoreMax=\"%d\" value=\"%s\". Error %v", setKey, scoreMin, scoreMax, err)
+		log.Printf("persistence.RemoveFromSortedSetByScore. sset=\"%s\" scoreMin=\"%d\" scoreMax=\"%d\". Error %v", setKey, scoreMin, scoreMax, err)
 		return err
 	}
-
-	log.Printf("persistence.AddStringToOrderedSet. Saved set=\"%s\" scoreMin=\"%d\" scoreMax=\"%d\" value=\"%s\"", setKey, scoreMin, scoreMax)
 
 	return nil
 }

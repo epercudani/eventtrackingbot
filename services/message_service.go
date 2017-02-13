@@ -23,7 +23,7 @@ func SendRequestEventNameMessage(chatId, messageId, userId int64, userName strin
 
 	messageSent := response.Result
 	log.Printf("Message sent id: %d in response to: %s", messageSent.MessageId, messageSent.ReplyToMessage.Text)
-	err = SetPendingResponseToMessage(userId, messageSent.MessageId, global.MESSAGE_TYPE_EVENT_PROVIDE_NAME)
+	err = setPendingResponseToMessage(userId, messageSent.MessageId, global.MESSAGE_TYPE_EVENT_PROVIDE_NAME)
 	if err != nil {
 		return err
 	}
@@ -47,7 +47,7 @@ func SendResponseToDeleteEventMessage(chatId, messageId, userId int64, userName 
 
 	messageSent := response.Result
 	log.Printf("Message sent id: %d in response to: %s", messageSent.MessageId, messageSent.ReplyToMessage.Text)
-	err = SetPendingResponseToMessage(userId, messageSent.MessageId, global.MESSAGE_TYPE_DELETE_EVENT_PROVIDE_INDEX)
+	err = setPendingResponseToMessage(userId, messageSent.MessageId, global.MESSAGE_TYPE_DELETE_EVENT_PROVIDE_INDEX)
 	if err != nil {
 		return err
 	}
@@ -95,10 +95,13 @@ func SendEventPropertySetAcknowledge(chatId int64, eventName, propertyName, prop
 	return sendSimpleMessage(chatId, messageText)
 }
 
-func SendSelectEventMessage(chatId, messageId, userFromId int64, events []types.Event) (err error) {
+func SendSelectEventMessage(chatId, messageId, userFromId int64, events []types.Event, noCurrent bool) (err error) {
 
 	var messageText bytes.Buffer
 
+	if noCurrent == true {
+		messageText.WriteString("There is no current event in this group. ")
+	}
 	messageText.WriteString(fmt.Sprint("Please choose one of the following:"))
 	messageText.WriteString(getSelectEventOptionsText(chatId, events))
 
@@ -111,7 +114,7 @@ func SendSelectEventMessage(chatId, messageId, userFromId int64, events []types.
 
 	messageSent := response.Result
 	log.Printf("Message sent id: %d in response to: %s", messageSent.MessageId, messageSent.ReplyToMessage.Text)
-	err = SetPendingResponseToMessage(userFromId, messageSent.MessageId, global.MESSAGE_TYPE_SELECT_CURRENT_EVENT)
+	err = setPendingResponseToMessage(userFromId, messageSent.MessageId, global.MESSAGE_TYPE_SELECT_CURRENT_EVENT)
 	if err != nil {
 		return err
 	}
@@ -119,13 +122,11 @@ func SendSelectEventMessage(chatId, messageId, userFromId int64, events []types.
 	return nil
 }
 
-func SendRequestPropertyMessage(chatId, replyToMessageId, userFromId int64, event types.Event, property string) (err error) {
+func SendRequestPropertyMessage(chatId, messageId, userFromId int64, event types.Event, property string) (err error) {
 
-	smr := requests.NewSendMessageRequest()
-	smr.AddChatId(chatId)
-	smr.AddText(fmt.Sprintf("Please, provide \"%s\" %s.", event.Name, property))
-	smr.AddReplyToMessageId(replyToMessageId)
-	smr.AddForceReply( types.ForceReply { ForceReply: true, Selective: true } )
+	messageText := fmt.Sprintf("Please, provide \"%s\" %s.", event.Name, property)
+
+	smr := newMessageReplyRequest(chatId, messageId, messageText)
 	response, err := smr.Execute()
 	if err != nil {
 		log.Printf("Error sending message: %v", err)
@@ -134,7 +135,7 @@ func SendRequestPropertyMessage(chatId, replyToMessageId, userFromId int64, even
 
 	messageSent := response.Result
 	log.Printf("Message sent id: %d in response to: %s", messageSent.MessageId, messageSent.ReplyToMessage.Text)
-	err = SetPendingResponseToMessage(userFromId, messageSent.MessageId, global.PROPERTY_TO_MESSAGE_TYPE_MAP[property])
+	err = setPendingResponseToMessage(userFromId, messageSent.MessageId, global.PROPERTY_TO_MESSAGE_TYPE_MAP[property])
 	if err != nil {
 		return err
 	}
@@ -144,16 +145,9 @@ func SendRequestPropertyMessage(chatId, replyToMessageId, userFromId int64, even
 
 func SendCurrentEventMessage(chatId int64, currentEvent types.Event) (err error) {
 
-	smr := requests.NewSendMessageRequest()
-	smr.AddChatId(chatId)
-	smr.AddText(fmt.Sprintf("Your current event is \"%s\".", GetEventDescription(currentEvent)))
-	_, err = smr.Execute()
-	if err != nil {
-		log.Printf("Error sending message: %v", err)
-		return err
-	}
+	messageText := fmt.Sprintf("Your current event is \"%s\".", GetEventDescription(currentEvent))
 
-	return nil
+	return sendSimpleMessage(chatId, messageText)
 }
 
 func SendAllEventsMessage(chatId int64, events []types.Event) error {
@@ -166,9 +160,9 @@ func SendAllEventsMessage(chatId int64, events []types.Event) error {
 		messageText.WriteString(fmt.Sprint("Events available in this group are:"))
 		for _, event := range events {
 			if (currentEvent.Name == event.Name) {
-				messageText.WriteString(fmt.Sprintf("\n[<b>%s</b>]", GetEventDescription(event)))
+				messageText.WriteString(fmt.Sprintf("\n[<b>%s</b>]", event.Name))
 			} else {
-				messageText.WriteString(fmt.Sprintf("\n%s", GetEventDescription(event)))
+				messageText.WriteString(fmt.Sprintf("\n%s", event.Name))
 			}
 		}
 	} else {
@@ -178,7 +172,7 @@ func SendAllEventsMessage(chatId int64, events []types.Event) error {
 	return sendSimpleMessage(chatId, messageText.String())
 }
 
-func SendAttendanceList(chatId, replyToMessageId int64, eventDescription string, participants []types.User) (err error) {
+func SendAttendanceList(chatId, messageId int64, eventDescription string, participants []types.User) (err error) {
 
 	var messageText bytes.Buffer
 	participantWord := "participants"
@@ -191,110 +185,35 @@ func SendAttendanceList(chatId, replyToMessageId int64, eventDescription string,
 		messageText.WriteString(fmt.Sprintf("\n%s %s", participant.FirstName, participant.LastName))
 	}
 
-	smr := requests.NewSendMessageRequest()
-	smr.AddChatId(chatId)
-	smr.AddText(messageText.String())
-	smr.AddReplyToMessageId(replyToMessageId)
-	response, err := smr.Execute()
-	if err != nil {
-		log.Printf("Error sending message: %v", err)
-		return err
-	}
-
-	messageSent := response.Result
-	log.Printf("Message sent id: %d in response to: %s", messageSent.MessageId, messageSent.ReplyToMessage.Text)
-
-	return nil
+	return sendSimpleMessage(chatId, messageText.String())
 }
 
-func SendNoParticipantsYetMessage(chatId, replyToMessageId int64, eventDescription string) (err error) {
+func SendNoParticipantsYetMessage(chatId, messageId int64, eventDescription string) (err error) {
 
-	text := fmt.Sprintf("There are no participants confirmed for %s yet.", eventDescription)
+	messageText := fmt.Sprintf("There are no participants confirmed for %s yet.", eventDescription)
 
-	smr := requests.NewSendMessageRequest()
-	smr.AddChatId(chatId)
-	smr.AddText(text)
-	smr.AddReplyToMessageId(replyToMessageId)
-	response, err := smr.Execute()
-	if err != nil {
-		log.Printf("Error sending message: %v", err)
-		return err
-	}
-
-	messageSent := response.Result
-	log.Printf("Message sent id: %d in response to: %s", messageSent.MessageId, messageSent.ReplyToMessage.Text)
-
-	return nil
+	return sendSimpleMessage(chatId, messageText)
 }
 
-func SendAttendanceConfirmationMessage(chatId, replyToMessageId int64, userName, eventDescription string) (err error) {
+func SendAttendanceConfirmationMessage(chatId int64, userName string) error {
 
-	text := fmt.Sprintf("Thanks %s! You have been confirmed to attend %s", userName, eventDescription)
+	messageText := fmt.Sprintf("Thanks %s! You have been confirmed.", userName)
 
-	smr := requests.NewSendMessageRequest()
-	smr.AddChatId(chatId)
-	smr.AddText(text)
-	smr.AddReplyToMessageId(replyToMessageId)
-	response, err := smr.Execute()
-	if err != nil {
-		log.Printf("Error sending message: %v", err)
-		return err
-	}
-
-	messageSent := response.Result
-	log.Printf("Message sent id: %d in response to: %s", messageSent.MessageId, messageSent.ReplyToMessage.Text)
-
-	return nil
+	return sendSimpleMessage(chatId, messageText)
 }
 
-func SendAttendanceRemovalConfirmationMessage(chatId, replyToMessageId int64, userName, eventDescription string) (err error) {
+func SendAttendanceRemovalConfirmationMessage(chatId int64, userName string) error {
 
-	text := fmt.Sprintf("Thanks %s! You have been removed from %s participants", userName, eventDescription)
+	messageText := fmt.Sprintf("Thanks %s! You have been removed.", userName)
 
-	smr := requests.NewSendMessageRequest()
-	smr.AddChatId(chatId)
-	smr.AddText(text)
-	smr.AddReplyToMessageId(replyToMessageId)
-	response, err := smr.Execute()
-	if err != nil {
-		log.Printf("Error sending message: %v", err)
-		return err
-	}
-
-	messageSent := response.Result
-	log.Printf("Message sent id: %d in response to: %s", messageSent.MessageId, messageSent.ReplyToMessage.Text)
-
-	return nil
+	return sendSimpleMessage(chatId, messageText)
 }
 
-func SendCurrentEventNotSetMessage(chatId, replyToMessageId int64) (err error) {
+func SendNoEventsInGroupMessage(chatId, messageId int64) (err error) {
 
-	text := "There is no current event in this group."
+	messageText := "There are no events in this group."
 
-	smr := requests.NewSendMessageRequest()
-	smr.AddChatId(chatId)
-	smr.AddText(text)
-	smr.AddReplyToMessageId(replyToMessageId)
-	response, err := smr.Execute()
-	if err != nil {
-		log.Printf("Error sending message: %v", err)
-		return err
-	}
-
-	messageSent := response.Result
-	log.Printf("Message sent id: %d in response to: %s", messageSent.MessageId, messageSent.ReplyToMessage.Text)
-
-	return nil
-}
-
-func SendNoEventsInGroupMessage(chatId, replyToMessageId int64) (err error) {
-
-	text := "There are no events in this group."
-
-	smr := requests.NewSendMessageRequest()
-	smr.AddChatId(chatId)
-	smr.AddText(text)
-	smr.AddReplyToMessageId(replyToMessageId)
+	smr := newMessageReplyRequest(chatId, messageId, messageText)
 	response, err := smr.Execute()
 	if err != nil {
 		log.Printf("Error sending message: %v", err)
@@ -309,19 +228,12 @@ func SendNoEventsInGroupMessage(chatId, replyToMessageId int64) (err error) {
 
 func SendTooManyParametersMessage(chatId int64, commandName string) (err error) {
 
-	smr := requests.NewSendMessageRequest()
-	smr.AddChatId(chatId)
-	smr.AddText(fmt.Sprintf("Too many parameters. Please use: /%s", commandName))
-	_, err = smr.Execute()
-	if err != nil {
-		log.Printf("Error sending message: %v", err)
-		return err
-	}
+	messageText := fmt.Sprintf("Too many parameters. Please use: /%s", commandName)
 
-	return nil
+	return sendSimpleMessage(chatId, messageText)
 }
 
-func SetPendingResponseToMessage(userId, messageId int64, messageType string) (err error) {
+func setPendingResponseToMessage(userId, messageId int64, messageType string) (err error) {
 
 	err = persistence.SaveIntWithTTL(fmt.Sprintf(persistence.KEY_WAITIING_RESPONSE_TO, userId, messageId), 1, 10 * 60) // Ten minutes
 	if err != nil {

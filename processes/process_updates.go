@@ -14,8 +14,8 @@ var (
 	REGEXP_START = regexp.MustCompile(fmt.Sprintf("^/start(@%s)?$", global.BOT_NAME))
 	REGEXP_HELP = regexp.MustCompile(fmt.Sprintf("^/help(@%s)?$", global.BOT_NAME))
 	REGEXP_CREATE_EVENT = regexp.MustCompile(fmt.Sprintf("^/create_event(@%s)?( .*)?$", global.BOT_NAME))
-	REGEXP_SET_WHEN = regexp.MustCompile(fmt.Sprintf("^/set_when(@%s)?$", global.BOT_NAME))
-	REGEXP_SET_WHERE = regexp.MustCompile(fmt.Sprintf("^/set_where(@%s)?$", global.BOT_NAME))
+	REGEXP_SET_WHEN = regexp.MustCompile(fmt.Sprintf("^/set_when(@%s)?( .*)?$", global.BOT_NAME))
+	REGEXP_SET_WHERE = regexp.MustCompile(fmt.Sprintf("^/set_where(@%s)?( .*)?$", global.BOT_NAME))
 	REGEXP_DELETE_EVENT = regexp.MustCompile(fmt.Sprintf("^/delete_event(@%s)?$", global.BOT_NAME))
 	REGEXP_CURRENT_EVENT = regexp.MustCompile(fmt.Sprintf("^/current_event(@%s)?$", global.BOT_NAME))
 	REGEXP_SELECT_EVENT = regexp.MustCompile(fmt.Sprintf("^/select_event(@%s)?$", global.BOT_NAME))
@@ -55,7 +55,7 @@ func processUpdate(update types.Update) {
 		processCurrentEvent(update)
 
 	case REGEXP_SELECT_EVENT.MatchString(strings.TrimSpace(update.Message.Text)):
-		processSelectEvent(update)
+		processSelectEvent(update, false)
 
 	case REGEXP_ALL_EVENTS.MatchString(strings.TrimSpace(update.Message.Text)):
 		processAllEvents(update)
@@ -113,13 +113,6 @@ func processUpdate(update types.Update) {
 			log.Print("Other message received")
 		}
 	}
-
-/*
-/change_event [name]
-/close_event [name]
-/will_go [name]
-/wont_go [name]
-*/
 }
 
 func ProcessUpdates(updateList []types.Update) (nextUpdateId int64) {

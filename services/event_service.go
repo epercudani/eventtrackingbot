@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"github.com/kinslayere/eventtrackingbot/persistence"
 	"github.com/kinslayere/eventtrackingbot/types"
+	"github.com/kinslayere/eventtrackingbot/global"
 )
 
 func GetEventKeyFromGroupAndName(chatId int64, eventName string) string {
@@ -89,6 +90,24 @@ func DeleteEvent(chatId int64, eventName string) {
 	}
 
 	RemoveEventFromGroup(chatId, eventName)
+}
+
+func SetEventProperty(chatId int64, currentEvent types.Event, property, value string) error {
+
+	switch property {
+	case global.EVENT_PROPERTY_DATE:
+		currentEvent.Date = value
+	case global.EVENT_PROPERTY_PLACE:
+		currentEvent.Place = value
+	}
+
+	err := SaveEvent(chatId, currentEvent)
+	if err != nil {
+		log.Printf("Error saving message property %s: %v", property, err)
+		return err
+	}
+
+	return nil
 }
 
 func GetCurrentEvent(chatId int64) types.Event {

@@ -44,18 +44,28 @@ func processSetWhen(update types.Update) error {
 
 	fields := strings.Fields(strings.TrimSpace(update.Message.Text))
 
+	currentEvent := services.GetCurrentEvent(update.Message.Chat.Id)
+
 	switch len(fields) {
 	case 1:
-		currentEvent := services.GetCurrentEvent(update.Message.Chat.Id)
 		if currentEvent.Name != "" {
-			// Send acknowledge message and wait for event name
+			// Send acknowledge message and wait for event date
 			services.SendRequestPropertyMessage(update.Message.Chat.Id, update.Message.MessageId, update.Message.From.Id, currentEvent, global.EVENT_PROPERTY_DATE)
 		} else {
 			return processCurrentEventNotSet(update)
 		}
 
 	default:
-		services.SendTooManyParametersMessage(update.Message.Chat.Id, global.COMMAND_NAME_SET_WHEN)
+		property := global.EVENT_PROPERTY_DATE
+		value := strings.Join(fields[1:], " ")
+
+		err := services.SetEventProperty(update.Message.Chat.Id, currentEvent, property, value)
+		if err != nil {
+			log.Printf("Error setting message property %s: %v", property, err)
+			return err
+		}
+
+		return services.SendEventPropertySetAcknowledge(update.Message.Chat.Id, currentEvent.Name, property, value)
 	}
 
 	return nil
@@ -122,16 +132,9 @@ func processSetEventProperty(update types.Update, property string) (err error) {
 
 	currentEvent := services.GetCurrentEvent(update.Message.Chat.Id)
 
-	switch property {
-	case global.EVENT_PROPERTY_DATE:
-		currentEvent.Date = update.Message.Text
-	case global.EVENT_PROPERTY_PLACE:
-		currentEvent.Place = update.Message.Text
-	}
-
-	err = services.SaveEvent(update.Message.Chat.Id, currentEvent)
+	err = services.SetEventProperty(update.Message.Chat.Id, currentEvent, property, update.Message.Text)
 	if err != nil {
-		log.Printf("Error saving message property %s: %v", property, err)
+		log.Printf("Error setting message property %s: %v", property, err)
 		return
 	}
 
@@ -236,8 +239,7 @@ func processWillGo(update types.Update) error {
 			return err
 		}
 
-		return services.SendAttendanceConfirmationMessage(update.Message.Chat.Id, update.Message.MessageId,
-			update.Message.From.FirstName, services.GetEventDescription(currentEvent))
+		return services.SendAttendanceConfirmationMessage(update.Message.Chat.Id, update.Message.From.FirstName)
 	} else {
 		return processCurrentEventNotSet(update)
 	}
@@ -252,8 +254,7 @@ func processWontGo(update types.Update) error {
 			return err
 		}
 
-		return services.SendAttendanceRemovalConfirmationMessage(update.Message.Chat.Id, update.Message.MessageId,
-			update.Message.From.FirstName, services.GetEventDescription(currentEvent))
+		return services.SendAttendanceRemovalConfirmationMessage(update.Message.Chat.Id, update.Message.From.FirstName)
 	} else {
 		return processCurrentEventNotSet(update)
 	}
@@ -271,11 +272,11 @@ func processCurrentEvent(update types.Update) error {
 	return nil
 }
 
-func processSelectEvent(update types.Update) error {
+func processSelectEvent(update types.Update, noCurrent bool) error {
 
 	events := services.GetGroupEvents(update.Message.Chat.Id)
 	if len(events) > 0 {
-		return services.SendSelectEventMessage(update.Message.Chat.Id, update.Message.MessageId, update.Message.From.Id, events)
+		return services.SendSelectEventMessage(update.Message.Chat.Id, update.Message.MessageId, update.Message.From.Id, events, noCurrent)
 	} else {
 		return services.SendNoEventsInGroupMessage(update.Message.Chat.Id, update.Message.MessageId)
 	}
@@ -283,13 +284,7 @@ func processSelectEvent(update types.Update) error {
 
 func processCurrentEventNotSet(update types.Update) (err error) {
 
-	err = services.SendCurrentEventNotSetMessage(update.Message.Chat.Id, update.Message.MessageId)
-	if err != nil {
-		log.Printf("Error sending message: %v", err)
-		return err
-	}
-
-	processSelectEvent(update)
+	processSelectEvent(update, true)
 
 	return nil
 }
