@@ -116,7 +116,15 @@ type Message struct {
 	MigrateFromChatId	int			`json:"migrate_from_chat_id"`
 }
 
-type InlineQuery struct  {
+type MessageEntity struct {
+	Type			string			`json:"type"`
+	offset			int			`json:"offset"`
+	length			int			`json:"length"`
+	url			string			`json:"url"`
+	user			User			`json:"user"`
+}
+
+type InlineQuery struct {
 	Id			string			`json:"id"`
 	From			User			`json:"from"`
 	Query			string			`json:"query"`

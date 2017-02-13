@@ -31,13 +31,29 @@ func GetEvent(eventKey string) (event types.Event) {
 	return
 }
 
-func CreateEvent(chatId int64, eventName string) {
+func CreateEvent(chatId int64, eventName string) error {
 
 	event := types.Event{ Name: eventName }
 
-	SaveEvent(chatId, event)
-	SetCurrentEvent(chatId, eventName)
+	err := SaveEvent(chatId, event)
+	if err != nil {
+		log.Printf("Error creating event %s: %v", eventName, err)
+		return err
+	}
+
+	err = SetCurrentEvent(chatId, eventName)
+	if err != nil {
+		log.Printf("Error setting event %s as current: %v", eventName, err)
+		return err
+	}
+
 	AddEventToGroup(chatId, eventName)
+	if err != nil {
+		log.Printf("Error adding event %s to group %d: %v", eventName, chatId, err)
+		return err
+	}
+
+	return nil
 }
 
 func SaveEvent(chatId int64, event types.Event) error {
@@ -101,14 +117,16 @@ func GetEventDescription(event types.Event) string {
 	return description.String()
 }
 
-func SetCurrentEvent(chatId int64, eventName string) {
+func SetCurrentEvent(chatId int64, eventName string) error {
 
 	eventKey := fmt.Sprintf(persistence.KEY_EVENT, chatId, eventName)
 	err := persistence.SaveString(fmt.Sprintf(persistence.KEY_CURRENT_EVENT, chatId), eventKey)
 	if err != nil {
 		log.Printf("Error setting current event: %v", err)
-		return
+		return err
 	}
+
+	return nil
 }
 
 func UnsetCurrentEvent(chatId int64) {
@@ -120,18 +138,21 @@ func UnsetCurrentEvent(chatId int64) {
 	}
 }
 
-func AddEventToGroup(chatId int64, eventName string) {
+func AddEventToGroup(chatId int64, eventName string) error {
 
 	key := fmt.Sprintf(persistence.KEY_GROUP_EVENTS, chatId)
 	index, err := persistence.GetSortedSetSize(key)
 	if err != nil {
-		return
+		log.Printf("Error adding event to group: %v", err)
+		return err
 	}
 	err = persistence.AddStringToSortedSet(key, index, eventName)
 	if err != nil {
 		log.Printf("Error adding event to group: %v", err)
-		return
+		return err
 	}
+
+	return nil
 }
 
 func RemoveEventFromGroup(chatId int64, eventName string) {

@@ -8,7 +8,7 @@ import (
 )
 
 type SendMessageResponse struct {
-	Ok			bool			`json:"ok"`
+	Ok		bool		`json:"ok"`
 	Result		types.Message	`json:"result"`
 }
 

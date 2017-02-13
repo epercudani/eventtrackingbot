@@ -12,18 +12,29 @@ import (
 	"strconv"
 )
 
-func processCreateEventWithoutName(update types.Update) error {
+func processCreateEvent(update types.Update) error {
 
 	fields := strings.Fields(strings.TrimSpace(update.Message.Text))
 
 	switch len(fields) {
 	case 1:
-		return services.SendResponseToCreateEventMessage(
+		return services.SendRequestEventNameMessage(
 			update.Message.Chat.Id, update.Message.MessageId,
 			update.Message.From.Id, update.Message.From.FirstName)
 
 	default:
-		return services.SendTooManyParametersMessage(update.Message.Chat.Id, global.COMMAND_NAME_CREATE_EVENT)
+		eventName := strings.Join(fields[1:], " ")
+		err := services.CreateEvent(update.Message.Chat.Id, eventName)
+		if err != nil {
+			log.Printf("Error processing create event: %v", err)
+			return err
+		}
+
+		err = services.SendCreatedEventAcknowledge(update.Message.Chat.Id, update.Message.From.FirstName, eventName)
+		if err != nil {
+			log.Printf("Error processing create event: %v", err)
+			return err
+		}
 	}
 
 	return nil
@@ -77,9 +88,14 @@ func processDeleteEventWithoutName(update types.Update) error {
 
 	switch len(fields) {
 	case 1:
-		return services.SendResponseToDeleteEventMessage(
-			update.Message.Chat.Id, update.Message.MessageId,
-			update.Message.From.Id, update.Message.From.FirstName)
+		events := services.GetGroupEvents(update.Message.Chat.Id)
+		if len(events) > 0 {
+			return services.SendResponseToDeleteEventMessage(
+				update.Message.Chat.Id, update.Message.MessageId,
+				update.Message.From.Id, update.Message.From.FirstName, events)
+		} else {
+			return services.SendNoEventsInGroupMessage(update.Message.Chat.Id, update.Message.MessageId)
+		}
 
 	default:
 		return services.SendTooManyParametersMessage(update.Message.Chat.Id, global.COMMAND_NAME_DELETE_EVENT)

@@ -10,7 +10,7 @@ import (
 	"github.com/kinslayere/eventtrackingbot/global"
 )
 
-func SendResponseToCreateEventMessage(chatId, messageId, userId int64, userName string) (err error) {
+func SendRequestEventNameMessage(chatId, messageId, userId int64, userName string) (err error) {
 
 	// Send acknowledge message and wait for event name
 	messageText := fmt.Sprintf("Hi %s! I'll help you to create your event. Please tell me the event's name.", userName)
@@ -31,19 +31,12 @@ func SendResponseToCreateEventMessage(chatId, messageId, userId int64, userName 
 	return nil
 }
 
-func SendResponseToDeleteEventMessage(chatId, messageId, userId int64, userName string) (err error) {
+func SendResponseToDeleteEventMessage(chatId, messageId, userId int64, userName string, events []types.Event) (err error) {
 
 	var messageText bytes.Buffer
 
-	events := GetGroupEventNames(chatId)
-	if len(events) > 0 {
-		messageText.WriteString(fmt.Sprintf("Hi %s! Which event do you want to delete?", userName))
-		for i, event := range events {
-			messageText.WriteString(fmt.Sprintf("\n/%d %s", i + 1, event))
-		}
-	} else {
-		messageText.WriteString(fmt.Sprint("There are no events in this group."))
-	}
+	messageText.WriteString(fmt.Sprintf("Hi %s! Which event do you want to delete?", userName))
+	messageText.WriteString(getSelectEventOptionsText(chatId, events))
 
 	smr := newMessageReplyRequest(chatId, messageId, messageText.String())
 	response, err := smr.Execute()
@@ -102,20 +95,14 @@ func SendEventPropertySetAcknowledge(chatId int64, eventName, propertyName, prop
 	return sendSimpleMessage(chatId, messageText)
 }
 
-func SendSelectEventMessage(chatId, replyToMessageId, userFromId int64, events []types.Event) (err error) {
+func SendSelectEventMessage(chatId, messageId, userFromId int64, events []types.Event) (err error) {
 
-	var text bytes.Buffer
+	var messageText bytes.Buffer
 
-	text.WriteString(fmt.Sprint("Please choose one of the following:"))
-	for i, event := range events {
-		text.WriteString(fmt.Sprintf("\n/%d %s", i + 1, GetEventDescription(event)))
-	}
+	messageText.WriteString(fmt.Sprint("Please choose one of the following:"))
+	messageText.WriteString(getSelectEventOptionsText(chatId, events))
 
-	smr := requests.NewSendMessageRequest()
-	smr.AddChatId(chatId)
-	smr.AddText(text.String())
-	smr.AddReplyToMessageId(replyToMessageId)
-	smr.AddForceReply( types.ForceReply { ForceReply: true, Selective: true } )
+	smr := newMessageReplyRequest(chatId, messageId, messageText.String())
 	response, err := smr.Execute()
 	if err != nil {
 		log.Printf("Error sending message: %v", err)
@@ -179,7 +166,7 @@ func SendAllEventsMessage(chatId int64, events []types.Event) error {
 		messageText.WriteString(fmt.Sprint("Events available in this group are:"))
 		for _, event := range events {
 			if (currentEvent.Name == event.Name) {
-				messageText.WriteString(fmt.Sprintf("\n%s [C]", GetEventDescription(event)))
+				messageText.WriteString(fmt.Sprintf("\n[<b>%s</b>]", GetEventDescription(event)))
 			} else {
 				messageText.WriteString(fmt.Sprintf("\n%s", GetEventDescription(event)))
 			}
@@ -193,20 +180,20 @@ func SendAllEventsMessage(chatId int64, events []types.Event) error {
 
 func SendAttendanceList(chatId, replyToMessageId int64, eventDescription string, participants []types.User) (err error) {
 
-	var text bytes.Buffer
+	var messageText bytes.Buffer
 	participantWord := "participants"
 	if len(participants) == 1 {
 		participantWord = "participant"
 	}
 
-	text.WriteString(fmt.Sprintf("%d %s for %s:", len(participants), participantWord, eventDescription))
+	messageText.WriteString(fmt.Sprintf("%d %s for %s:", len(participants), participantWord, eventDescription))
 	for _, participant := range participants {
-		text.WriteString(fmt.Sprintf("\n%s %s", participant.FirstName, participant.LastName))
+		messageText.WriteString(fmt.Sprintf("\n%s %s", participant.FirstName, participant.LastName))
 	}
 
 	smr := requests.NewSendMessageRequest()
 	smr.AddChatId(chatId)
-	smr.AddText(text.String())
+	smr.AddText(messageText.String())
 	smr.AddReplyToMessageId(replyToMessageId)
 	response, err := smr.Execute()
 	if err != nil {
@@ -351,6 +338,26 @@ func SetPendingResponseToMessage(userId, messageId int64, messageType string) (e
 	return
 }
 
+func getSelectEventOptionsText(chatId int64, events []types.Event) string {
+
+	var text bytes.Buffer
+	currentEvent := GetCurrentEvent(chatId)
+
+	for i, event := range events {
+
+		var eventName string
+
+		if (currentEvent.Name == event.Name) {
+			eventName = fmt.Sprintf("\n/%d <b>[%s]</b>", i + 1, GetEventDescription(event))
+		} else {
+			eventName = fmt.Sprintf("\n/%d %s", i + 1, GetEventDescription(event))
+		}
+		text.WriteString(eventName)
+	}
+
+	return text.String()
+}
+
 func sendSimpleMessage(chatId int64, messageText string) (err error) {
 
 	smr := newMessageRequest(chatId, messageText)
@@ -367,6 +374,7 @@ func newMessageRequest(chatId int64, messageText string) *requests.SendMessageRe
 	smr := requests.NewSendMessageRequest()
 	smr.AddChatId(chatId)
 	smr.AddText(messageText)
+	smr.AddParseMode(global.MESSAGE_PARSE_MODE_HTML)
 
 	return smr
 }
