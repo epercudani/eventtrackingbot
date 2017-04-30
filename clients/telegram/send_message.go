@@ -1,10 +1,11 @@
-package requests
+package telegram
 
 import (
 	"errors"
-	"github.com/kinslayere/eventtrackingbot/types"
+	"github.com/kinslayere/eventtrackingbot/types/telegram"
 	"github.com/kinslayere/eventtrackingbot/global"
 	"fmt"
+	"github.com/kinslayere/eventtrackingbot/clients"
 )
 
 type SendMessageResponse struct {
@@ -13,12 +14,12 @@ type SendMessageResponse struct {
 }
 
 type SendMessageRequest struct {
-	getRequest *GetRequest
+	getRequest *requests.GetRequest
 }
 
 func NewSendMessageRequest() *SendMessageRequest {
-	getRequest := NewGetRequest()
-	getRequest.baseUrl = global.BASE_URL + "sendMessage"
+	getRequest := requests.NewGetRequest()
+	getRequest.SetBaseURL(global.TELEGRAM_BASE_URL + "sendMessage")
 	return &SendMessageRequest{getRequest}
 }
 
@@ -63,7 +64,7 @@ func (r *SendMessageRequest) Execute() (*SendMessageResponse, error) {
 	}
 
 	if !response.Ok {
-		return nil, errors.New(fmt.Sprintf("Error executing request '%v'", r.getRequest.baseUrl))
+		return nil, errors.New(fmt.Sprintf("Error executing request '%v'", r.getRequest.GetBaseURL()))
 	}
 
 	return &response, nil

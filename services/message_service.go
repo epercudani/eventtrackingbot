@@ -5,8 +5,8 @@ import (
 	"log"
 	"bytes"
 	"github.com/kinslayere/eventtrackingbot/persistence"
-	"github.com/kinslayere/eventtrackingbot/requests"
-	"github.com/kinslayere/eventtrackingbot/types"
+	"github.com/kinslayere/eventtrackingbot/clients/telegram"
+	"github.com/kinslayere/eventtrackingbot/types/telegram"
 	"github.com/kinslayere/eventtrackingbot/global"
 )
 
@@ -143,9 +143,27 @@ func SendRequestPropertyMessage(chatId, messageId, userFromId int64, event types
 	return nil
 }
 
-func SendCurrentEventMessage(chatId int64, currentEvent types.Event) (err error) {
+func SendCurrentEventPropertyMessage(chatId int64, currentEvent types.Event, property string) error {
 
-	messageText := fmt.Sprintf("Your current event is \"%s\".", GetEventDescription(currentEvent))
+	propertyValue, err := GetEventProperty(currentEvent, property)
+	if err != nil {
+		log.Printf("Error sending current event property message: %v", err)
+		return err
+	}
+
+	var messageText string
+	if propertyValue != "" {
+		messageText = fmt.Sprintf("Current event %s is <b>%s</b>.", property, propertyValue)
+	} else {
+		messageText = fmt.Sprintf("Current event %s has not been set.", property)
+	}
+
+	return sendSimpleMessage(chatId, messageText)
+}
+
+func SendCurrentEventMessage(chatId int64, currentEvent types.Event) error {
+
+	messageText := fmt.Sprintf("Your current event is %s.", GetEventDescription(currentEvent))
 
 	return sendSimpleMessage(chatId, messageText)
 }
@@ -281,9 +299,9 @@ func sendSimpleMessage(chatId int64, messageText string) (err error) {
 	return err
 }
 
-func newMessageRequest(chatId int64, messageText string) *requests.SendMessageRequest {
+func newMessageRequest(chatId int64, messageText string) *telegram.SendMessageRequest {
 
-	smr := requests.NewSendMessageRequest()
+	smr := telegram.NewSendMessageRequest()
 	smr.AddChatId(chatId)
 	smr.AddText(messageText)
 	smr.AddParseMode(global.MESSAGE_PARSE_MODE_HTML)
@@ -291,7 +309,7 @@ func newMessageRequest(chatId int64, messageText string) *requests.SendMessageRe
 	return smr
 }
 
-func newMessageReplyRequest(chatId, messageFromId int64, messageText string) *requests.SendMessageRequest {
+func newMessageReplyRequest(chatId, messageFromId int64, messageText string) *telegram.SendMessageRequest {
 
 	smr := newMessageRequest(chatId, messageText)
 	smr.AddReplyToMessageId(messageFromId)

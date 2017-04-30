@@ -5,8 +5,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"github.com/kinslayere/eventtrackingbot/persistence"
-	"github.com/kinslayere/eventtrackingbot/types"
+	"github.com/kinslayere/eventtrackingbot/types/telegram"
 	"github.com/kinslayere/eventtrackingbot/global"
+	"errors"
 )
 
 func GetEventKeyFromGroupAndName(chatId int64, eventName string) string {
@@ -92,12 +93,28 @@ func DeleteEvent(chatId int64, eventName string) {
 	RemoveEventFromGroup(chatId, eventName)
 }
 
+func GetEventProperty(event types.Event, property string) (string, error) {
+
+	switch property {
+	case global.EVENT_PROPERTY_NAME:
+		return event.Name, nil
+	case global.EVENT_PROPERTY_DATE:
+		return event.Date, nil
+	case global.EVENT_PROPERTY_PLACE:
+		return event.Place, nil
+	default:
+		return "", errors.New(fmt.Sprintf("GetEventProperty. Invalid property \"%s\"", property))
+	}
+}
+
 func SetEventProperty(chatId int64, currentEvent types.Event, property, value string) error {
 
 	switch property {
 	case global.EVENT_PROPERTY_DATE:
 		currentEvent.Date = value
 	case global.EVENT_PROPERTY_PLACE:
+
+
 		currentEvent.Place = value
 	}
 
@@ -124,13 +141,14 @@ func GetEventDescription(event types.Event) string {
 
 	var description bytes.Buffer
 
-	description.WriteString(event.Name)
+	description.WriteString(fmt.Sprintf("<b>%s</b>", event.Name))
+
 	if event.Date != "" {
-		description.WriteString(fmt.Sprintf(" on %s", event.Date))
+		description.WriteString(fmt.Sprintf(" on <b>%s</b>", event.Date))
 	}
 
 	if event.Place != "" {
-		description.WriteString(fmt.Sprintf(" at %s", event.Place))
+		description.WriteString(fmt.Sprintf(" at <b>%s</b>", event.Place))
 	}
 
 	return description.String()

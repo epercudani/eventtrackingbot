@@ -18,6 +18,14 @@ func NewRequest() *Request {
 	return &r
 }
 
+func (r *Request) SetBaseURL(value string) {
+	r.baseUrl = value
+}
+
+func (r *Request) GetBaseURL() string {
+	return r.baseUrl
+}
+
 func (r *Request) SetParamInt(name string, param int) {
 	r.params[name] = strconv.Itoa(param)
 }

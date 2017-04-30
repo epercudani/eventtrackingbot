@@ -3,7 +3,7 @@ package processes
 import (
 	"log"
 	"regexp"
-	"github.com/kinslayere/eventtrackingbot/types"
+	"github.com/kinslayere/eventtrackingbot/types/telegram"
 	"strings"
 	"github.com/kinslayere/eventtrackingbot/persistence"
 	"fmt"
@@ -14,8 +14,8 @@ var (
 	REGEXP_START = regexp.MustCompile(fmt.Sprintf("^/start(@%s)?$", global.BOT_NAME))
 	REGEXP_HELP = regexp.MustCompile(fmt.Sprintf("^/help(@%s)?$", global.BOT_NAME))
 	REGEXP_CREATE_EVENT = regexp.MustCompile(fmt.Sprintf("^/create_event(@%s)?( .*)?$", global.BOT_NAME))
-	REGEXP_SET_WHEN = regexp.MustCompile(fmt.Sprintf("^/set_when(@%s)?( .*)?$", global.BOT_NAME))
-	REGEXP_SET_WHERE = regexp.MustCompile(fmt.Sprintf("^/set_where(@%s)?( .*)?$", global.BOT_NAME))
+	REGEXP_WHEN = regexp.MustCompile(fmt.Sprintf("^/when(@%s)?( .*)?$", global.BOT_NAME))
+	REGEXP_WHERE = regexp.MustCompile(fmt.Sprintf("^/where(@%s)?( .*)?$", global.BOT_NAME))
 	REGEXP_DELETE_EVENT = regexp.MustCompile(fmt.Sprintf("^/delete_event(@%s)?$", global.BOT_NAME))
 	REGEXP_CURRENT_EVENT = regexp.MustCompile(fmt.Sprintf("^/current_event(@%s)?$", global.BOT_NAME))
 	REGEXP_SELECT_EVENT = regexp.MustCompile(fmt.Sprintf("^/select_event(@%s)?$", global.BOT_NAME))
@@ -42,11 +42,11 @@ func processUpdate(update types.Update) {
 	case REGEXP_CREATE_EVENT.MatchString(strings.TrimSpace(update.Message.Text)):
 		processCreateEvent(update)
 
-	case REGEXP_SET_WHEN.MatchString(strings.TrimSpace(update.Message.Text)):
-		processSetWhen(update)
+	case REGEXP_WHEN.MatchString(strings.TrimSpace(update.Message.Text)):
+		processWhen(update)
 
-	case REGEXP_SET_WHERE.MatchString(strings.TrimSpace(update.Message.Text)):
-		processSetWhere(update)
+	case REGEXP_WHERE.MatchString(strings.TrimSpace(update.Message.Text)):
+		processWhere(update)
 
 	case REGEXP_DELETE_EVENT.MatchString(strings.TrimSpace(update.Message.Text)):
 		processDeleteEventWithoutName(update)

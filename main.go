@@ -2,7 +2,7 @@ package main
 
 import (
 	"log"
-	"github.com/kinslayere/eventtrackingbot/requests"
+	"github.com/kinslayere/eventtrackingbot/clients/telegram"
 	"github.com/kinslayere/eventtrackingbot/global"
 	"github.com/kinslayere/eventtrackingbot/processes"
 	"syscall"
@@ -16,7 +16,7 @@ func receiveAndProcessUpdates() {
 
 	var nextUpdateId int64
 	log.Println("Starting to listen updates")
-	getUpdatesRequest := requests.NewGetUpdatesRequest()
+	getUpdatesRequest := telegram.NewGetUpdatesRequest()
 	getUpdatesRequest.SetTimeout(60)
 	getUpdatesRequest.SetLimit(global.GET_UPDATES_DEFAULT_LIMIT)
 

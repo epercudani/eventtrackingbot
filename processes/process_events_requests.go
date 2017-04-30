@@ -6,7 +6,7 @@ import (
 	"log"
 	"github.com/kinslayere/eventtrackingbot/global"
 	"github.com/kinslayere/eventtrackingbot/persistence"
-	"github.com/kinslayere/eventtrackingbot/types"
+	"github.com/kinslayere/eventtrackingbot/types/telegram"
 	"github.com/kinslayere/eventtrackingbot/services"
 	"regexp"
 	"strconv"
@@ -40,7 +40,7 @@ func processCreateEvent(update types.Update) error {
 	return nil
 }
 
-func processSetWhen(update types.Update) error {
+func processWhen(update types.Update) error {
 
 	fields := strings.Fields(strings.TrimSpace(update.Message.Text))
 
@@ -49,8 +49,7 @@ func processSetWhen(update types.Update) error {
 	switch len(fields) {
 	case 1:
 		if currentEvent.Name != "" {
-			// Send acknowledge message and wait for event date
-			services.SendRequestPropertyMessage(update.Message.Chat.Id, update.Message.MessageId, update.Message.From.Id, currentEvent, global.EVENT_PROPERTY_DATE)
+			return services.SendCurrentEventPropertyMessage(update.Message.Chat.Id, currentEvent, global.EVENT_PROPERTY_DATE)
 		} else {
 			return processCurrentEventNotSet(update)
 		}
@@ -71,22 +70,30 @@ func processSetWhen(update types.Update) error {
 	return nil
 }
 
-func processSetWhere(update types.Update) error {
+func processWhere(update types.Update) error {
 
 	fields := strings.Fields(strings.TrimSpace(update.Message.Text))
+	currentEvent := services.GetCurrentEvent(update.Message.Chat.Id)
 
 	switch len(fields) {
 	case 1:
-		currentEvent := services.GetCurrentEvent(update.Message.Chat.Id)
 		if currentEvent.Name != "" {
-			// Send acknowledge message and wait for event name
-			services.SendRequestPropertyMessage(update.Message.Chat.Id, update.Message.MessageId, update.Message.From.Id, currentEvent, global.EVENT_PROPERTY_PLACE)
+			return services.SendCurrentEventPropertyMessage(update.Message.Chat.Id, currentEvent, global.EVENT_PROPERTY_PLACE)
 		} else {
 			return processCurrentEventNotSet(update)
 		}
 
 	default:
-		services.SendTooManyParametersMessage(update.Message.Chat.Id, global.COMMAND_NAME_SET_WHERE)
+		property := global.EVENT_PROPERTY_PLACE
+		value := strings.Join(fields[1:], " ")
+
+		err := services.SetEventProperty(update.Message.Chat.Id, currentEvent, property, value)
+		if err != nil {
+			log.Printf("Error setting message property %s: %v", property, err)
+			return err
+		}
+
+		return services.SendEventPropertySetAcknowledge(update.Message.Chat.Id, currentEvent.Name, property, value)
 	}
 
 	return nil
