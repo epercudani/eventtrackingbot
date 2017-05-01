@@ -32,6 +32,7 @@ func isTestGroup(chatId int64) bool {
 			return true
 		}
 	}
+
 	return false
 }
 

@@ -47,9 +47,15 @@ func loadTestGroupsConfig() {
 		log.Println("Warning. Test groups files couldn't be opened.")
 	} else {
 		defer testGroupsFile.Close()
+
+		var testGroupId int64
+
 		fileScanner := bufio.NewScanner(testGroupsFile)
 		for fileScanner.Scan() {
-			global.TestGroups = append(global.TestGroups, strconv.Atoi(fileScanner.Text()))
+			testGroupId, err = strconv.ParseInt(fileScanner.Text(), 10, 64)
+			if err == nil {
+				global.TestGroups = append(global.TestGroups, testGroupId)
+			}
 		}
 	}
 
