@@ -40,28 +40,6 @@ func receiveAndProcessUpdates() {
 	}
 }
 
-func loadTestGroupsConfig() {
-
-	testGroupsFile, err := os.Open("test_groups")
-	if err != nil {
-		log.Println("Warning. Test groups files couldn't be opened.")
-	} else {
-		defer testGroupsFile.Close()
-
-		var testGroupId int64
-
-		fileScanner := bufio.NewScanner(testGroupsFile)
-		for fileScanner.Scan() {
-			testGroupId, err = strconv.ParseInt(fileScanner.Text(), 10, 64)
-			if err == nil {
-				global.TestGroups = append(global.TestGroups, testGroupId)
-			}
-		}
-	}
-
-	log.Println(global.TestGroups)
-}
-
 func main() {
 
 	log.Println("Starting bot")
@@ -109,8 +87,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error connecting to redis host %s by %s. Error is: %v", redisUrl.Host, redisNetwork, err)
 	}
-
-	loadTestGroupsConfig()
 
 	log.Println("Bot started")
 
