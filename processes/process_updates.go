@@ -37,7 +37,7 @@ func isTestGroup(chatId int64) bool {
 
 func processUpdate(update types.Update) {
 
-	if !isTestGroup(update.Message.Chat.Id) {
+	if isTestGroup(update.Message.Chat.Id) {
 		return
 	}
 
