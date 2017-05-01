@@ -10,9 +10,6 @@ import (
 	"github.com/mediocregopher/radix.v2/pool"
 	"github.com/mediocregopher/radix.v2/redis"
 	"time"
-	"bufio"
-	"os"
-	"strconv"
 )
 
 func receiveAndProcessUpdates() {
