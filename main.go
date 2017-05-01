@@ -10,6 +10,9 @@ import (
 	"github.com/mediocregopher/radix.v2/pool"
 	"github.com/mediocregopher/radix.v2/redis"
 	"time"
+	"bufio"
+	"os"
+	"strconv"
 )
 
 func receiveAndProcessUpdates() {
@@ -35,6 +38,22 @@ func receiveAndProcessUpdates() {
 			log.Fatal("updateResponse.Ok => false")
 		}
 	}
+}
+
+func loadTestGroupsConfig() {
+
+	testGroupsFile, err := os.Open("test_groups")
+	if err != nil {
+		log.Println("Warning. Test groups files couldn't be opened.")
+	} else {
+		defer testGroupsFile.Close()
+		fileScanner := bufio.NewScanner(testGroupsFile)
+		for fileScanner.Scan() {
+			global.TestGroups = append(global.TestGroups, strconv.Atoi(fileScanner.Text()))
+		}
+	}
+
+	log.Println(global.TestGroups)
 }
 
 func main() {
@@ -84,6 +103,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error connecting to redis host %s by %s. Error is: %v", redisUrl.Host, redisNetwork, err)
 	}
+
+	loadTestGroupsConfig()
 
 	log.Println("Bot started")
 
