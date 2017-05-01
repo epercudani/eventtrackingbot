@@ -25,22 +25,7 @@ var (
 	REGEXP_WONT_GO = regexp.MustCompile(fmt.Sprintf("^/wont_go(@%s)?$", global.BOT_NAME))
 )
 
-func isTestGroup(chatId int64) bool {
-
-	for _, testGroupId := range global.TestGroups {
-		if chatId == testGroupId {
-			return true
-		}
-	}
-
-	return false
-}
-
 func processUpdate(update types.Update) {
-
-	if !isTestGroup(update.Message.Chat.Id) {
-		return
-	}
 
 	if update.Message.Chat.ChatType == "private" {
 		processPrivateChat(update)

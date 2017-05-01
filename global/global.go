@@ -5,5 +5,3 @@ import (
 )
 
 var RedisPool *pool.Pool
-
-var TestGroups []int64
