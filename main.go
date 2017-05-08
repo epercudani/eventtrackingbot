@@ -41,6 +41,18 @@ func main() {
 
 	log.Println("Starting bot")
 
+	botName, ok := syscall.Getenv("BOT_NAME")
+	if !ok {
+		log.Fatalf("Failed to obtain bot name from env variable %s", "BOT_NAME")
+	}
+	global.BOT_NAME = botName
+
+	botToken, ok := syscall.Getenv("BOT_TOKEN")
+	if !ok {
+		log.Fatalf("Failed to obtain bot token from env variable %s", "BOT_TOKEN")
+	}
+	global.BOT_TOKEN = botToken
+
 	redisNetwork := "tcp"
 	redisUrlRaw, ok := syscall.Getenv("REDIS_URL")
 	if !ok {

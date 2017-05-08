@@ -19,7 +19,7 @@ type SendMessageRequest struct {
 
 func NewSendMessageRequest() *SendMessageRequest {
 	getRequest := requests.NewGetRequest()
-	getRequest.SetBaseURL(global.TELEGRAM_BASE_URL + "sendMessage")
+	getRequest.SetBaseURL(global.GetBaseUrl() + "sendMessage")
 	return &SendMessageRequest{getRequest}
 }
 

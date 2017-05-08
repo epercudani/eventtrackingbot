@@ -19,7 +19,7 @@ type GetUpdatesRequest struct {
 
 func NewGetUpdatesRequest() *GetUpdatesRequest {
 	getRequest := requests.NewGetRequest()
-	getRequest.SetBaseURL(global.TELEGRAM_BASE_URL + "getUpdates")
+	getRequest.SetBaseURL(global.GetBaseUrl() + "getUpdates")
 	return &GetUpdatesRequest{getRequest}
 }
 

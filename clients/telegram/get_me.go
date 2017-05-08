@@ -25,7 +25,7 @@ type GetMeRequest struct {
 
 func NewGetMeRequest() *GetMeRequest {
 	getRequest := requests.NewGetRequest()
-	getRequest.SetBaseURL(global.TELEGRAM_BASE_URL + "getMe")
+	getRequest.SetBaseURL(global.GetBaseUrl() + "getMe")
 
 	return &GetMeRequest{getRequest}
 }
