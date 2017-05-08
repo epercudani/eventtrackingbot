@@ -106,6 +106,7 @@ func SendSelectEventMessage(chatId, messageId, userFromId int64, events []types.
 	messageText.WriteString(getSelectEventOptionsText(chatId, events))
 
 	smr := newMessageReplyRequest(chatId, messageId, messageText.String())
+	log.Printf("%v - %v - %v", chatId, messageId, messageText.String())
 	response, err := smr.Execute()
 	if err != nil {
 		log.Printf("Error sending message: %v", err)
@@ -278,7 +279,7 @@ func getSelectEventOptionsText(chatId int64, events []types.Event) string {
 		var eventName string
 
 		if (currentEvent.Name == event.Name) {
-			eventName = fmt.Sprintf("\n/%d <b>[%s]</b>", i + 1, GetEventDescription(event))
+			eventName = fmt.Sprintf("\n/%d <b>[</b>%s<b>]</b>", i + 1, GetEventDescription(event))
 		} else {
 			eventName = fmt.Sprintf("\n/%d %s", i + 1, GetEventDescription(event))
 		}

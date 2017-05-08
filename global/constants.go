@@ -1,8 +1,11 @@
 package global
 
 const (
-	//BOT_NAME = "EventTrackingBot"
-	//TOKEN = "133198388:AAHHbnm7cNHMEF6hmdehKTCMRDrFMN46n-U"
+	//BOT_NAME_PROD = "EventTrackingBot"
+	//BOT_TOKEN_PROD = "133198388:AAHHbnm7cNHMEF6hmdehKTCMRDrFMN46n-U"
+
+	//BOT_NAME_TEST = "TestEventTrackingBot"
+	//BOT_TOKEN_TEST = "382820015:AAG_LlNOpVgdcmIMa5aY5_zOnwOnSR0Hiog"
 	TELEGRAM_BASE_URL = "https://api.telegram.org/bot%s/"
 
 	EVENT_PROPERTY_NAME = "name"

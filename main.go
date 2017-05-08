@@ -15,6 +15,9 @@ import (
 func receiveAndProcessUpdates() {
 
 	var nextUpdateId int64
+
+	processes.InitMessagesFilter()
+
 	log.Println("Starting to listen updates")
 	getUpdatesRequest := telegram.NewGetUpdatesRequest()
 	getUpdatesRequest.SetTimeout(60)
@@ -45,12 +48,14 @@ func main() {
 	if !ok {
 		log.Fatalf("Failed to obtain bot name from env variable %s", "BOT_NAME")
 	}
+	log.Printf("Bot name: %s\n", botName)
 	global.BOT_NAME = botName
 
 	botToken, ok := syscall.Getenv("BOT_TOKEN")
 	if !ok {
 		log.Fatalf("Failed to obtain bot token from env variable %s", "BOT_TOKEN")
 	}
+	log.Printf("Bot token: %s\n", botToken)
 	global.BOT_TOKEN = botToken
 
 	redisNetwork := "tcp"

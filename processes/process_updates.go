@@ -11,18 +11,18 @@ import (
 )
 
 var (
-	REGEXP_START = regexp.MustCompile(fmt.Sprintf("^/start(@%s)?$", global.BOT_NAME))
-	REGEXP_HELP = regexp.MustCompile(fmt.Sprintf("^/help(@%s)?$", global.BOT_NAME))
-	REGEXP_CREATE_EVENT = regexp.MustCompile(fmt.Sprintf("^/create_event(@%s)?( .*)?$", global.BOT_NAME))
-	REGEXP_WHEN = regexp.MustCompile(fmt.Sprintf("^/when(@%s)?( .*)?$", global.BOT_NAME))
-	REGEXP_WHERE = regexp.MustCompile(fmt.Sprintf("^/where(@%s)?( .*)?$", global.BOT_NAME))
-	REGEXP_DELETE_EVENT = regexp.MustCompile(fmt.Sprintf("^/delete_event(@%s)?$", global.BOT_NAME))
-	REGEXP_CURRENT_EVENT = regexp.MustCompile(fmt.Sprintf("^/current_event(@%s)?$", global.BOT_NAME))
-	REGEXP_SELECT_EVENT = regexp.MustCompile(fmt.Sprintf("^/select_event(@%s)?$", global.BOT_NAME))
-	REGEXP_ALL_EVENTS = regexp.MustCompile(fmt.Sprintf("^/all_events(@%s)?$", global.BOT_NAME))
-	REGEXP_PARTICIPANTS = regexp.MustCompile(fmt.Sprintf("^/participants(@%s)?$", global.BOT_NAME))
-	REGEXP_WILL_GO = regexp.MustCompile(fmt.Sprintf("^/will_go(@%s)?$", global.BOT_NAME))
-	REGEXP_WONT_GO = regexp.MustCompile(fmt.Sprintf("^/wont_go(@%s)?$", global.BOT_NAME))
+	REGEXP_START *regexp.Regexp
+	REGEXP_HELP *regexp.Regexp
+	REGEXP_CREATE_EVENT *regexp.Regexp
+	REGEXP_WHEN *regexp.Regexp
+	REGEXP_WHERE *regexp.Regexp
+	REGEXP_DELETE_EVENT *regexp.Regexp
+	REGEXP_CURRENT_EVENT *regexp.Regexp
+	REGEXP_SELECT_EVENT *regexp.Regexp
+	REGEXP_ALL_EVENTS *regexp.Regexp
+	REGEXP_PARTICIPANTS *regexp.Regexp
+	REGEXP_WILL_GO *regexp.Regexp
+	REGEXP_WONT_GO *regexp.Regexp
 )
 
 func processUpdate(update types.Update) {
@@ -110,7 +110,7 @@ func processUpdate(update types.Update) {
 				}
 			}
 		} else {
-			log.Print("Other message received")
+			log.Printf("Other message received: %s - %s - %s", update.Message.Text, global.BOT_NAME, REGEXP_CURRENT_EVENT.String())
 		}
 	}
 }
@@ -130,4 +130,20 @@ func ProcessUpdates(updateList []types.Update) (nextUpdateId int64) {
 	}
 
 	return
+}
+
+func InitMessagesFilter() {
+
+	REGEXP_START = regexp.MustCompile(fmt.Sprintf("^/start(@%s)?$", global.BOT_NAME))
+	REGEXP_HELP = regexp.MustCompile(fmt.Sprintf("^/help(@%s)?$", global.BOT_NAME))
+	REGEXP_CREATE_EVENT = regexp.MustCompile(fmt.Sprintf("^/create_event(@%s)?( .*)?$", global.BOT_NAME))
+	REGEXP_WHEN = regexp.MustCompile(fmt.Sprintf("^/when(@%s)?( .*)?$", global.BOT_NAME))
+	REGEXP_WHERE = regexp.MustCompile(fmt.Sprintf("^/where(@%s)?( .*)?$", global.BOT_NAME))
+	REGEXP_DELETE_EVENT = regexp.MustCompile(fmt.Sprintf("^/delete_event(@%s)?$", global.BOT_NAME))
+	REGEXP_CURRENT_EVENT = regexp.MustCompile(fmt.Sprintf("^/current_event(@%s)?$", global.BOT_NAME))
+	REGEXP_SELECT_EVENT = regexp.MustCompile(fmt.Sprintf("^/select_event(@%s)?$", global.BOT_NAME))
+	REGEXP_ALL_EVENTS = regexp.MustCompile(fmt.Sprintf("^/all_events(@%s)?$", global.BOT_NAME))
+	REGEXP_PARTICIPANTS = regexp.MustCompile(fmt.Sprintf("^/participants(@%s)?$", global.BOT_NAME))
+	REGEXP_WILL_GO = regexp.MustCompile(fmt.Sprintf("^/will_go(@%s)?$", global.BOT_NAME))
+	REGEXP_WONT_GO = regexp.MustCompile(fmt.Sprintf("^/wont_go(@%s)?$", global.BOT_NAME))
 }
